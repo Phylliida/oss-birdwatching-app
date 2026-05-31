@@ -8,8 +8,9 @@ import { getTaxon } from "../taxa.mjs";
 const taxon = getTaxon(process.env.TAXON);
 const SPECIES_PATH = `${taxon.dataDir}/species.json`;
 const OUT_PATH = `${taxon.dataDir}/gbif.json`;
-const CONCURRENCY = 1;
-const PER_REQUEST_DELAY_MS = 400;
+// Overridable for the big all-Plantae run (GBIF tolerates modest concurrency).
+const CONCURRENCY = Number(process.env.GBIF_CONCURRENCY || 1);
+const PER_REQUEST_DELAY_MS = Number(process.env.GBIF_DELAY_MS || 400);
 const MAX_RETRIES = 4;
 const UA = "oss-birdwatching-app/0.0 (https://github.com/Phylliida/oss-birdwatching-app; offline non-commercial)";
 

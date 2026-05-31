@@ -190,6 +190,23 @@ export const TAXA = {
     // we don't duplicate that genus.
     excludeGenera: ["Eucalyptus"],
   },
+
+  // The whole plant kingdom, enumerated with full lineage by
+  // scripts/enumerate-plantae.mjs (NOT the generic 01 — we need order/class/
+  // phylum to nest the unified tree). The generic data fetchers (02 Wikidata,
+  // 03 Wikipedia, 04 GBIF facets, 05 iNat) run against this dataDir keyed by
+  // scientificName. Built into the unified tree-of-life browser, not a
+  // standalone app, so webDir is unused by the generic 07 build.
+  plantae: {
+    rootName: "Plantae",
+    commonName: "Plants",
+    rootKey: 6,
+    rootId: "plantae",
+    dataDir: "data/plantae",
+    webDir: "web/plantae",
+    otolFamilyMode: false,
+    extinctFamilies: [],
+  },
 };
 
 export function getTaxon(name) {
