@@ -1,0 +1,29 @@
+node_modules/
+data/
+*.log
+.DS_Store
+.env
+.env.*
+
+# Generated per-app outputs (rebuild via scripts/taxon/07-build-tree.mjs
+# with TAXON=<name>, or scripts/07-build-tree.mjs for birds). All input data
+# lives in data/ which is also ignored.
+web/birds/
+web/trees/
+web/oaks/
+web/palms/
+web/maples/
+web/eucalypts/
+web/cycads/
+web/ginkgo/
+web/gnetales/
+web/magnolias/
+web/birches/
+web/willows/
+web/figs/
+web/laurels/
+web/acacias/
+web/rosaceae/
+web/myrtaceae/
+web/landing.json
+

@@ -1,0 +1,36 @@
+{
+  "name": "oss-birdwatching-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch-taxonomy": "node scripts/01-fetch-taxonomy.mjs",
+    "check-coverage": "node scripts/02-check-image-coverage.mjs",
+    "fetch-phylogeny": "node scripts/03-fetch-phylogeny.mjs",
+    "fetch-inat": "node scripts/08-fetch-inat-photos.mjs",
+    "check-attributes": "node scripts/09-check-attribute-coverage.mjs",
+    "fetch-avonet": "node scripts/10-fetch-avonet.mjs",
+    "fetch-gbif": "node scripts/11-fetch-gbif-ranges.mjs",
+    "fetch-gbif-full": "node scripts/13-fetch-gbif-full.mjs",
+    "fetch-gbif-elevation": "node scripts/29-fetch-gbif-elevation.mjs",
+    "fetch-wiki": "node scripts/14-fetch-wikipedia.mjs",
+    "compute-sisters": "node scripts/15-sister-species.mjs",
+    "compute-sisters-otol": "node scripts/30-otol-sisters.mjs",
+    "fetch-iucn": "node scripts/16-fetch-iucn.mjs",
+    "fetch-inat-extras": "node scripts/22-fetch-inat-extras.mjs",
+    "fetch-inat-labeled": "node scripts/26-fetch-inat-labeled.mjs",
+    "cleanup-licenses": "node scripts/27-cleanup-licenses.mjs",
+    "fetch-commons-attr": "node scripts/32-fetch-commons-attribution.mjs",
+    "fetch-wikidata-extras": "node scripts/23-fetch-wikidata-extras.mjs",
+    "fetch-ebird-codes": "node scripts/25-fetch-ebird-codes.mjs",
+    "fetch-xc": "node scripts/17-fetch-xenocanto.mjs",
+    "download-audio": "node scripts/19-download-audio.mjs",
+    "download-images": "node scripts/20-download-images.mjs",
+    "download-sonograms": "node scripts/31-download-sonograms.mjs",
+    "build-tree": "node scripts/07-build-tree.mjs",
+    "serve": "node scripts/serve.mjs"
+  },
+  "dependencies": {
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}
