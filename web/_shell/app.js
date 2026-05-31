@@ -655,6 +655,9 @@ function renderClade(n) {
     ? `<div class="scientific">${n.name}</div>`
     : "";
   const cards = n.children.map((cid) => cardFor(node(cid))).join("");
+  const wikiLink = n.wikiUrl
+    ? `<p class="clade-wiki"><a href="${n.wikiUrl}" target="_blank" rel="noopener">See Wikipedia article →</a></p>`
+    : "";
 
   $view.innerHTML = `
     <div class="title-block">
@@ -662,6 +665,7 @@ function renderClade(n) {
       <h1>${title}</h1>
       ${sub}
       <div class="meta">${n.children.length} ${n.children[0] ? RANK_LABEL[node(n.children[0]).type].toLowerCase() : ""}${n.children.length === 1 ? "" : "s"} · ${n.speciesCount} species total</div>
+      ${wikiLink}
     </div>
     <div class="grid">${cards}</div>
   `;

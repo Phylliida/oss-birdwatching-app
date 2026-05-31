@@ -28,7 +28,11 @@ const APPS = [
 const out = {};
 for (const a of APPS) {
   if (!existsSync(a.path)) { console.warn(`Missing: ${a.path}`); continue; }
-  const tree = JSON.parse(await readFile(a.path, "utf8"));
+  let tree;
+  // The pipeline may be mid-rewrite of another app's tree.json; tolerate a
+  // transient unreadable/partial file rather than aborting the whole aggregate.
+  try { tree = JSON.parse(await readFile(a.path, "utf8")); }
+  catch (e) { console.warn(`Skipping ${a.path}: ${e.message}`); continue; }
   const root = tree.nodes[a.id];
   if (!root) { console.warn(`No root node ${a.id} in ${a.path}`); continue; }
   out[a.id] = {
@@ -37,11 +41,35 @@ for (const a of APPS) {
     sciName: root.name,
     speciesCount: root.speciesCount,
     image: root.reprImg || null,
+    wikiUrl: root.wikiUrl || null,
   };
 }
 
+// Abstract landing nodes (Animalia / Plantae / Gymnosperms / Angiosperms) get
+// their own Wikipedia lead photo + article link from the higher-taxa cache.
+let higher = {};
+if (existsSync("data/higher-taxa-wiki.json")) {
+  try { higher = JSON.parse(await readFile("data/higher-taxa-wiki.json", "utf8")); }
+  catch { higher = {}; }
+}
+out._higher = {};
+for (const [viewKey, cacheKey] of [
+  ["animalia", "Animalia"],
+  ["plantae", "Plantae"],
+  ["gymnosperms", "Gymnosperms"],
+  ["angiosperms", "Angiosperms"],
+]) {
+  const h = higher[cacheKey];
+  out._higher[viewKey] = { image: h?.image || null, wikiUrl: h?.page || null };
+}
+
 await writeFile("web/landing.json", JSON.stringify(out, null, 2));
-console.log(`Wrote web/landing.json — ${Object.keys(out).length} apps`);
-for (const [k, v] of Object.entries(out)) {
-  console.log(`  ${k.padEnd(15)} ${String(v.speciesCount).padStart(6)} sp ${v.image ? "✓" : "✗"}`);
+const appKeys = Object.keys(out).filter((k) => k !== "_higher");
+console.log(`Wrote web/landing.json — ${appKeys.length} apps`);
+for (const k of appKeys) {
+  const v = out[k];
+  console.log(`  ${k.padEnd(15)} ${String(v.speciesCount).padStart(6)} sp ${v.image ? "✓" : "✗"}${v.wikiUrl ? " wiki" : ""}`);
+}
+for (const [k, v] of Object.entries(out._higher)) {
+  console.log(`  ${("_" + k).padEnd(15)} ${v.image ? "img" : "   "} ${v.wikiUrl ? "wiki" : ""}`);
 }

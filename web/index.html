@@ -66,6 +66,8 @@
       }
       .title-block h1 { margin: 4px 0 4px; font-size: 32px; font-weight: 700; }
       .title-block .meta { color: var(--muted); font-size: 14px; }
+      .title-block .clade-wiki { margin: 8px 0 0; font-size: 14px; font-weight: 600; }
+      .title-block .clade-wiki a { color: var(--accent); }
 
       .grid {
         display: grid;
@@ -228,7 +230,11 @@
             count = `${meta.speciesCount.toLocaleString()} species`;
           } else {
             href = `#/${c.id}`;
-            img = c.imageFromApp ? LANDING[c.imageFromApp]?.image : null;
+            // Branch nodes (Animalia, Plantae, Gymnosperms, Angiosperms) show
+            // their OWN Wikipedia lead photo; fall back to a descendant app's.
+            const wk = c.id.split("/").pop();
+            img = LANDING._higher?.[wk]?.image
+              || (c.imageFromApp ? LANDING[c.imageFromApp]?.image : null);
             sub = c.sub;
             count = "";
           }
@@ -244,11 +250,16 @@
           </a>`;
         }).join("");
 
+        const viewWiki = LANDING._higher?.[viewId.split("/").pop()]?.wikiUrl;
+        const wikiLink = viewWiki
+          ? `<p class="clade-wiki"><a href="${viewWiki}" target="_blank" rel="noopener">See Wikipedia article →</a></p>`
+          : "";
         document.getElementById("view").innerHTML = `
           <div class="title-block">
             <div class="rank">${view.rank}</div>
             <h1>${view.title}</h1>
             <div class="meta">${view.meta}</div>
+            ${wikiLink}
           </div>
           <div class="grid">${cards}</div>
         `;

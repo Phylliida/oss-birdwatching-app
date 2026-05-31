@@ -422,6 +422,17 @@ function computeReprImg(nodeId) {
 }
 computeReprImg("aves");
 
+// Higher-taxon Wikipedia images + article links (shared across all apps).
+// A clade prefers its OWN wiki lead photo over the first descendant photo.
+let higherWiki = {};
+if (existsSync("data/higher-taxa-wiki.json")) {
+  try { higherWiki = JSON.parse(await readFile("data/higher-taxa-wiki.json", "utf8")); }
+  catch { higherWiki = {}; }
+}
+function ownWiki(n) {
+  return higherWiki[n.name] || (n.commonName ? higherWiki[n.commonName] : null) || null;
+}
+
 // Light fields the skeleton needs for browse, search, /nearby filter.
 // (`states` is computed below from observations.stateProvince.)
 const SKELETON_SPECIES_FIELDS = new Set([
@@ -461,8 +472,11 @@ for (const n of nodes.values()) {
     const light = { id: n.id, type: n.type, name: n.name, parent: n.parent, children: n.children };
     if (n.commonName) light.commonName = n.commonName;
     if (n.speciesCount) light.speciesCount = n.speciesCount;
-    const r = reprImg.get(n.id);
+    // Prefer this clade's own Wikipedia lead photo; fall back to a descendant.
+    const w = ownWiki(n);
+    const r = (w && w.image) || reprImg.get(n.id);
     if (r) light.reprImg = r;
+    if (w && w.page) { light.wikiUrl = w.page; if (w.title) light.wikiTitle = w.title; }
     skeleton[n.id] = light;
   }
 }

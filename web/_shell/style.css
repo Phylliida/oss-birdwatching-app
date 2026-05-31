@@ -168,6 +168,8 @@ main#view {
   font-weight: 600;
 }
 .title-block .meta { color: var(--muted); font-size: 14px; }
+.title-block .clade-wiki { margin: 8px 0 0; font-size: 14px; font-weight: 600; }
+.title-block .clade-wiki a { color: var(--accent); }
 
 /* IUCN Red List ladder — Wikipedia-style horizontal scale showing all seven
    categories from EX (most at risk) to LC (least), with the current
