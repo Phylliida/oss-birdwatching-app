@@ -173,26 +173,37 @@ iNat (step 5) is intentionally not in the pipeline because we hold the rule
 
 ## What's running right now (when handed off)
 
-- **Secondary photo downloader** (`scripts/33-download-secondary-photos.mjs`).
-  ~18,765 photos queued (labeled + extras for birds). At ~2 concurrent +
-  400 ms delay it's a multi-hour run. Files land in
-  `data/images/<slug>-<variant>.jpg` and the build picks them up
-  automatically the next time `npm run build-tree` is run.
+- **Plant iNat pipeline** (`scripts/run-inat-pipeline.sh`). Sequential
+  through all 16 plant clades — conifers (resuming from ~850 cached) → oaks
+  → palms → maples → eucalypts → cycads → ginkgo → gnetales → magnolias →
+  birches → willows → figs → laurels → acacias → rosaceae → myrtaceae. Each
+  clade: fetch iNat taxa + photos, then rebuild that app. Total ~10–20 hours
+  of sequential fetching. Respects the one-iNat-at-a-time rule.
+
+  When it finishes, `scripts/aggregate-landing.mjs` is run automatically so
+  the landing page's `landing.json` reflects any updated `reprImg`.
+
+- **Done since last handoff revision:**
+  - Bird secondary photo download (`scripts/33-download-secondary-photos.mjs`)
+    — 18,762 photos downloaded to `data/images/<slug>-<variant>.jpg`. Tree
+    rebuilt; thumb-strip URLs now point at local paths. 29,408 total bird
+    images on disk.
 
 ## Pending work
 
 ### Immediate
 
-- **Rebuild birds tree after secondary photo download completes** to switch
-  remote iNat thumb URLs to local `/images/` paths.
+- **Wait for plant iNat pipeline to finish** (see "What's running" above).
+  When done, every plant app's species pages will show iNat-sourced thumb
+  strips and the iNat species page link will resolve to the real taxon
+  page rather than the search fallback.
 
-- **Resume conifer iNat photos** (Task #26 — paused at ~850 of 2014 species
-  cached). The script lives at `scripts/conifers/06-fetch-inat.mjs` but the
-  generic `scripts/taxon/05-fetch-inat.mjs` is the version to use going
-  forward (set `TAXON=conifers`).
-
-- **Run iNat for the other 15 plant clades** one at a time (per the
-  one-iNat-at-a-time rule). At ~1 sec/req each clade is 10–30 min.
+- **Re-download plant photos at /large.jpg** *only if* plant photos look
+  pixelated after iNat lands. The fetcher stores `medium_url` (500 px); for
+  birds we caught this and re-fetched at `/large.jpg` (1024 px). Same regex
+  fix in `scripts/07-build-tree.mjs` (`largeInat`) covers display, but local
+  files (if we ever download plant photos) would need re-fetch. For now
+  plants stream from iNat — the URL transform handles it.
 
 ### Nice-to-have
 
