@@ -962,8 +962,8 @@ function renderSpecies(n) {
         ${renderAudio(n.audio)}
       </div>
       <div class="details">
-        ${renderUses(n)}
         ${renderWiki(n.wiki)}
+        ${renderUses(n)}
         ${renderTraits(n.traits, { wingspan: n.wingspan })}
         ${renderObservations(n.observations)}
         ${renderGrowing(n)}
