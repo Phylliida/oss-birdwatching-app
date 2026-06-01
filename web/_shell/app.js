@@ -404,41 +404,61 @@ function escapeHtml(s) {
 }
 const stars = (r) => `<span class="stars" aria-label="${r} of 5">${"★".repeat(r)}${"☆".repeat(5 - r)}</span>`;
 
+// PFAF long-text fields keep paragraph newlines — render each as its own <p>.
+function paras(text) {
+  return String(text).split("\n").filter((p) => p.trim()).map((p) => `<p>${escapeHtml(p)}</p>`).join("");
+}
+
+// --- PFAF growing-condition decoders --------------------------------------
+const PFAF_SHADE = { F: "full shade", S: "semi-shade", N: "full sun" };
+const PFAF_SOIL  = { L: "light (sandy)", M: "medium (loam)", H: "heavy (clay)" };
+const PFAF_MOIST = { D: "dry", M: "moist", We: "wet", Wa: "water" };
+const PFAF_PH    = { A: "acid", N: "neutral", B: "alkaline" };
+const PFAF_GROWTH = { S: "slow", M: "medium", F: "fast" };
+const PFAF_FLAGS = {
+  nitrogen: "Nitrogen fixer", selffertile: "Self-fertile", scented: "Scented",
+  frosttender: "Frost-tender", drought: "Drought-tolerant", poorsoil: "Tolerates poor soil",
+  pollution: "Pollution-tolerant", wildlife: "Wildlife value", welldrained: "Needs good drainage",
+  saline: "Salt-tolerant", wind: "Wind-tolerant",
+};
+function decodeRange(code, map, tokenizer) {
+  if (!code) return null;
+  const toks = tokenizer ? (code.match(tokenizer) || []) : code.split("");
+  const terms = toks.map((t) => map[t]).filter(Boolean);
+  return terms.length ? terms.join(" to ") : null;
+}
+
 // Edibility & uses: Kew WCUPS category flags + Plants For A Future detail.
-// Framed as *documented uses*, never a foraging-safety claim — absence does not
-// mean a plant is safe, and edible plants can have toxic parts/look-alikes.
+// Documented uses, never a foraging-safety claim — absence does not mean safe.
 function renderUses(n) {
-  const uses = n.uses, pfaf = n.pfaf;
-  if ((!uses || !uses.length) && !pfaf) return "";
+  const uses = n.uses, p = n.pfaf;
+  if ((!uses || !uses.length) && !p) return "";
 
   let badges = "";
   if (uses && uses.length) {
-    const tags = uses
-      .slice()
-      .sort((a, b) => WCUPS_ORDER.indexOf(a) - WCUPS_ORDER.indexOf(b))
-      .map((c) => {
-        const u = WCUPS_USES[c];
-        return u ? `<span class="use-tag use-${u.kind}" title="${u.desc}">${u.label}</span>` : "";
-      })
-      .join("");
+    const tags = uses.slice().sort((a, b) => WCUPS_ORDER.indexOf(a) - WCUPS_ORDER.indexOf(b))
+      .map((c) => { const u = WCUPS_USES[c]; return u ? `<span class="use-tag use-${u.kind}" title="${u.desc}">${u.label}</span>` : ""; }).join("");
     badges = `<div class="uses">${tags}</div>`;
   }
 
   let detail = "";
-  if (pfaf) {
+  if (p) {
     const ratings = [];
-    if (pfaf.er) ratings.push(`<span class="rating" title="PFAF edibility rating ${pfaf.er}/5"><span class="rating-label">Edibility</span>${stars(pfaf.er)}</span>`);
-    if (pfaf.mr) ratings.push(`<span class="rating" title="PFAF medicinal rating ${pfaf.mr}/5"><span class="rating-label">Medicinal</span>${stars(pfaf.mr)}</span>`);
+    if (p.er) ratings.push(`<span class="rating" title="PFAF edibility rating ${p.er}/5"><span class="rating-label">Edibility</span>${stars(p.er)}</span>`);
+    if (p.mr) ratings.push(`<span class="rating" title="PFAF medicinal rating ${p.mr}/5"><span class="rating-label">Medicinal</span>${stars(p.mr)}</span>`);
+    const block = (label, text) => text ? `<div class="use-block"><span class="use-block-label">${label}</span>${paras(text)}</div>` : "";
     detail = `
       ${ratings.length ? `<div class="ratings">${ratings.join("")}</div>` : ""}
-      ${pfaf.edible ? `<div class="edible-uses"><span class="eu-label">How to eat</span><p>${escapeHtml(pfaf.edible)}</p></div>` : ""}
-      ${pfaf.hazards ? `<div class="hazards"><span class="hz-label">⚠ Known hazards</span><p>${escapeHtml(pfaf.hazards)}</p></div>` : ""}
+      ${block("How to eat", p.edible)}
+      ${block("Medicinal uses", p.medicinal)}
+      ${block("Other uses", p.other)}
+      ${p.hazards ? `<div class="hazards"><span class="hz-label">⚠ Known hazards</span>${paras(p.hazards)}</div>` : ""}
     `;
   }
 
-  // Sources line — PFAF's licence requires a prominent link wherever its data shows.
+  // PFAF's licence requires a prominent link wherever its data is shown.
   const credits = [`Use categories: Kew <a href="https://doi.org/10.5063/F1CV4G34" target="_blank" rel="noopener">WCUPS</a> (CC BY)`];
-  if (pfaf) credits.push(`edibility &amp; hazards: <a href="https://pfaf.org" target="_blank" rel="noopener">Plants For A Future</a> (CC BY-NC-SA)`);
+  if (p) credits.push(`edibility, hazards &amp; growing info: <a href="https://pfaf.org" target="_blank" rel="noopener">Plants For A Future</a> (CC BY-NC-SA)`);
 
   return `
     <h2>Edibility &amp; uses</h2>
@@ -448,6 +468,45 @@ function renderUses(n) {
       A plant not listed here may still be toxic, and many edible plants have poisonous parts or
       look-alikes. Never eat a wild plant without confident, expert identification.
       <br><span class="uses-credit">${credits.join(" · ")}</span></p>
+  `;
+}
+
+// Growing & cultivation — the rest of the PFAF record (conditions, propagation…).
+function renderGrowing(n) {
+  const p = n.pfaf;
+  if (!p) return "";
+  const facts = [];
+  const habit = [p.decid === "D" ? "deciduous" : p.decid === "E" ? "evergreen" : "", (p.habit || "").toLowerCase()].filter(Boolean).join(" ");
+  if (habit) facts.push(["Habit", habit.charAt(0).toUpperCase() + habit.slice(1)]);
+  if (p.height) facts.push(["Size", `${p.height} m tall${p.width ? ` × ${p.width} m wide` : ""}`]);
+  if (p.hardy != null) facts.push(["Hardiness", `zone ${p.hardy}`]);
+  const add = (k, v) => { if (v) facts.push([k, v]); };
+  add("Light", decodeRange(p.shade, PFAF_SHADE));
+  add("Moisture", decodeRange(p.moisture, PFAF_MOIST, /We|Wa|D|M/g));
+  add("Soil", decodeRange(p.soil, PFAF_SOIL));
+  add("pH", decodeRange(p.ph, PFAF_PH));
+  if (p.growth) facts.push(["Growth rate", PFAF_GROWTH[p.growth] || p.growth]);
+  if (p.pollinators) facts.push(["Pollinated by", p.pollinators.toLowerCase()]);
+
+  const grid = facts.length ? `<dl class="grow-facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${escapeHtml(v)}</dd></div>`).join("")}</dl>` : "";
+  const flagTags = (p.flags || []).map((f) => PFAF_FLAGS[f]).filter(Boolean).map((l) => `<span class="grow-tag">${l}</span>`).join("");
+  const flags = flagTags ? `<div class="grow-tags">${flagTags}</div>` : "";
+  const blocks = [
+    p.habitat ? ["Habitat", p.habitat] : null,
+    p.range ? ["Native range", p.range] : null,
+    p.cultivation ? ["Cultivation", p.cultivation] : null,
+    p.propagation ? ["Propagation", p.propagation] : null,
+    p.synonyms ? ["Synonyms", p.synonyms] : null,
+  ].filter(Boolean).map(([label, text]) => `<div class="use-block"><span class="use-block-label">${label}</span>${paras(text)}</div>`).join("");
+
+  if (!grid && !flags && !blocks) return "";
+  return `
+    <h2>Growing &amp; cultivation</h2>
+    ${grid}
+    ${flags}
+    ${blocks}
+    <p class="uses-disclaimer"><span class="uses-credit">Growing information from
+      <a href="https://pfaf.org" target="_blank" rel="noopener">Plants For A Future</a> (CC BY-NC-SA).</span></p>
   `;
 }
 
@@ -907,6 +966,7 @@ function renderSpecies(n) {
         ${renderWiki(n.wiki)}
         ${renderTraits(n.traits, { wingspan: n.wingspan })}
         ${renderObservations(n.observations)}
+        ${renderGrowing(n)}
         ${renderAltNames(n.altNames)}
         ${renderSubspecies(n.subspecies)}
         ${renderSisters(n.sisters)}

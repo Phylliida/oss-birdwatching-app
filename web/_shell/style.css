@@ -311,8 +311,8 @@ main#view {
 .rating { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
 .rating-label { font-weight: 600; color: var(--fg); }
 .stars { color: #c9a227; letter-spacing: 1px; font-size: 14px; }
-.edible-uses { margin: 8px 0; }
-.edible-uses .eu-label, .hazards .hz-label {
+.use-block { margin: 10px 0; }
+.use-block .use-block-label, .hazards .hz-label {
   display: block;
   font-size: 11px;
   text-transform: uppercase;
@@ -321,7 +321,29 @@ main#view {
   color: var(--muted);
   margin-bottom: 2px;
 }
-.edible-uses p { margin: 0; font-size: 14px; line-height: 1.5; }
+.use-block p { margin: 0 0 6px; font-size: 14px; line-height: 1.5; }
+.use-block p:last-child { margin-bottom: 0; }
+/* Growing-condition facts grid + tolerance tags */
+.grow-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 6px 18px;
+  margin: 6px 0 10px;
+}
+.grow-facts > div { display: flex; flex-direction: column; }
+.grow-facts dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+.grow-facts dd { margin: 0; font-size: 14px; }
+.grow-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.grow-tag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #eef1e6;
+  color: #4d5a36;
+  border: 1px solid #dbe2c8;
+}
 .hazards {
   margin: 10px 0;
   background: #fbeeea;
@@ -331,7 +353,8 @@ main#view {
   padding: 8px 11px;
 }
 .hazards .hz-label { color: #8f2417; }
-.hazards p { margin: 0; font-size: 13.5px; line-height: 1.5; color: #5c2018; }
+.hazards p { margin: 0 0 5px; font-size: 13.5px; line-height: 1.5; color: #5c2018; }
+.hazards p:last-child { margin-bottom: 0; }
 .uses-note { margin: 2px 0 6px; font-size: 13px; color: var(--muted); }
 .uses-note.uses-warn { color: #8f2417; font-weight: 600; }
 .uses-disclaimer {
