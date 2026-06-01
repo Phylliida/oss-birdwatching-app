@@ -23,6 +23,7 @@ const APPS = [
   { id: "rosaceae",     path: "web/rosaceae/tree.json",   href: "/rosaceae/" },
   { id: "myrtaceae",    path: "web/myrtaceae/tree.json",  href: "/myrtaceae/" },
   { id: "eucalyptus",   path: "web/eucalypts/tree.json",  href: "/eucalypts/" },
+  { id: "plantae",      path: "web/plantae/tree.json",    href: "/plantae/" },
 ];
 
 const out = {};

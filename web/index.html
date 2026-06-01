@@ -129,8 +129,8 @@
           children: [
             { id: "animalia",  name: "Animalia",  sub: "Animals",            // image picked dynamically
               imageFromApp: "aves", speciesCount: 11227 },
-            { id: "plantae",   name: "Plantae",   sub: "Plants",
-              imageFromApp: "pinopsida", speciesCount: null },
+            { id: "plantae",   name: "Plantae",   sub: "Plants — browse the whole kingdom",
+              href: "/plantae/", imageFromApp: "pinopsida", speciesCount: null },
           ],
         },
         animalia: {
@@ -229,14 +229,18 @@
             sub = c.sub;
             count = `${meta.speciesCount.toLocaleString()} species`;
           } else {
-            href = `#/${c.id}`;
+            // A child may link straight into a sub-app (c.href, e.g. the unified
+            // /plantae/ tree) rather than another landing view.
+            href = c.href || `#/${c.id}`;
             // Branch nodes (Animalia, Plantae, Gymnosperms, Angiosperms) show
             // their OWN Wikipedia lead photo; fall back to a descendant app's.
             const wk = c.id.split("/").pop();
             img = LANDING._higher?.[wk]?.image
               || (c.imageFromApp ? LANDING[c.imageFromApp]?.image : null);
             sub = c.sub;
-            count = "";
+            count = LANDING[c.id]?.speciesCount
+              ? `${LANDING[c.id].speciesCount.toLocaleString()} species`
+              : "";
           }
           const thumb = img
             ? `<div class="thumb" style="background-image:url('${thumbUrl(img)}')"></div>`
