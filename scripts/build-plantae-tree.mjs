@@ -27,6 +27,12 @@ const wiki = (await loadJson(`${DATA}/wiki.json`)) || {};
 const gbif = (await loadJson(`${DATA}/gbif.json`)) || {};
 const inat = (await loadJson(`${DATA}/inat.json`)) || {};
 const higher = (await loadJson("data/higher-taxa-wiki.json")) || {};
+// Kew WCUPS use categories (HF=human food, PO=poison, ME=medicine, …), keyed
+// by binomial — see scripts/parse-wcups.py. CC BY, RBG Kew.
+const wcups = (await loadJson("data/edibility/wcups.json")) || {};
+// PFAF edibility rating + how-to-eat + known hazards — see scripts/parse-pfaf.mjs.
+// CC BY-NC-SA, Plants For A Future (prominent link kept in the UI).
+const pfaf = (await loadJson("data/edibility/pfaf.json")) || {};
 console.log(`Loaded ${species.length.toLocaleString()} species; wikidata ${Object.keys(wikidata).length.toLocaleString()}, wiki ${Object.keys(wiki).length.toLocaleString()}, gbif ${Object.keys(gbif).length.toLocaleString()}, inat ${Object.keys(inat).length.toLocaleString()}`);
 
 // Upgrade iNat photo URLs to the 1024px "large" variant.
@@ -111,6 +117,8 @@ for (const sp of species) {
     altNames,
     extraPhotos: inatRec && inatRec.photos && inatRec.photos.length ? inatRec.photos.map((p) => ({ ...p, url: largeInat(p.url) })) : null,
     inatId: (inatRec && inatRec.taxonId) || null,
+    uses: wcups[sp.scientificName] || null,
+    pfaf: pfaf[sp.scientificName] || null,
     gbifKey: sp.gbifKey,
   });
 }
@@ -170,7 +178,7 @@ for (const n of nodes.values()) {
     const heavy = { id: n.id, type: "species", name: n.name, parent: n.parent };
     if (n.commonName) heavy.commonName = n.commonName;
     if (n.image) heavy.image = n.image;
-    for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "gbifKey", "imageSource"]) {
+    for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "uses", "pfaf", "gbifKey", "imageSource"]) {
       const v = n[k];
       if (v == null) continue;
       if (Array.isArray(v) && v.length === 0) continue;

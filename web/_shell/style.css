@@ -292,6 +292,62 @@ main#view {
 }
 .iucn-aux:hover { text-decoration: none; filter: brightness(0.97); }
 
+/* Edibility & uses (Kew WCUPS) */
+.uses { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+.use-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: help;
+}
+.use-tag.use-edible    { background: #e1f0d8; color: #2f6b1f; border-color: #c2e0b0; }
+.use-tag.use-toxic     { background: #f6d9d4; color: #8f2417; border-color: #e9b4aa; }
+.use-tag.use-medicinal { background: #dde4f3; color: #2c3f73; border-color: #c2cdec; }
+.use-tag.use-neutral   { background: #efeae0; color: #5b5346; border-color: #e2dccf; }
+.ratings { display: flex; flex-wrap: wrap; gap: 16px; margin: 6px 0; }
+.rating { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.rating-label { font-weight: 600; color: var(--fg); }
+.stars { color: #c9a227; letter-spacing: 1px; font-size: 14px; }
+.edible-uses { margin: 8px 0; }
+.edible-uses .eu-label, .hazards .hz-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.edible-uses p { margin: 0; font-size: 14px; line-height: 1.5; }
+.hazards {
+  margin: 10px 0;
+  background: #fbeeea;
+  border: 1px solid #e9b4aa;
+  border-left: 3px solid #b5341f;
+  border-radius: 5px;
+  padding: 8px 11px;
+}
+.hazards .hz-label { color: #8f2417; }
+.hazards p { margin: 0; font-size: 13.5px; line-height: 1.5; color: #5c2018; }
+.uses-note { margin: 2px 0 6px; font-size: 13px; color: var(--muted); }
+.uses-note.uses-warn { color: #8f2417; font-weight: 600; }
+.uses-disclaimer {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+  background: #faf6ee;
+  border: 1px solid var(--border);
+  border-left: 3px solid #c9a227;
+  border-radius: 4px;
+  padding: 7px 10px;
+}
+.uses-disclaimer a { color: var(--accent); }
+.uses-credit { display: inline-block; margin-top: 4px; font-style: italic; opacity: 0.85; }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

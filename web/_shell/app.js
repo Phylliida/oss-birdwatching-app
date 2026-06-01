@@ -384,6 +384,73 @@ function renderSisters(sisters) {
   `;
 }
 
+// Kew WCUPS use categories. `kind` drives the badge colour.
+const WCUPS_USES = {
+  HF: { label: "Human food", kind: "edible",   desc: "Documented as a source of food for people." },
+  PO: { label: "Poison / toxic", kind: "toxic", desc: "Documented as poisonous or toxic to people or livestock." },
+  ME: { label: "Medicine", kind: "medicinal", desc: "Documented medicinal use." },
+  AF: { label: "Animal food", kind: "neutral", desc: "Used as fodder or forage for animals." },
+  IF: { label: "Invertebrate food", kind: "neutral", desc: "Food for invertebrates, e.g. bees." },
+  MA: { label: "Materials", kind: "neutral", desc: "Timber, fibre, dyes and other materials." },
+  FU: { label: "Fuel", kind: "neutral", desc: "Used as fuel — firewood, charcoal, etc." },
+  EU: { label: "Environmental", kind: "neutral", desc: "Erosion control, shade, ornamental and other environmental uses." },
+  GS: { label: "Gene source", kind: "neutral", desc: "Crop wild relative / breeding gene source." },
+  SU: { label: "Social use", kind: "neutral", desc: "Ritual, recreational or other social use." },
+};
+const WCUPS_ORDER = ["HF", "PO", "ME", "AF", "IF", "MA", "FU", "GS", "EU", "SU"];
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+const stars = (r) => `<span class="stars" aria-label="${r} of 5">${"★".repeat(r)}${"☆".repeat(5 - r)}</span>`;
+
+// Edibility & uses: Kew WCUPS category flags + Plants For A Future detail.
+// Framed as *documented uses*, never a foraging-safety claim — absence does not
+// mean a plant is safe, and edible plants can have toxic parts/look-alikes.
+function renderUses(n) {
+  const uses = n.uses, pfaf = n.pfaf;
+  if ((!uses || !uses.length) && !pfaf) return "";
+
+  let badges = "";
+  if (uses && uses.length) {
+    const tags = uses
+      .slice()
+      .sort((a, b) => WCUPS_ORDER.indexOf(a) - WCUPS_ORDER.indexOf(b))
+      .map((c) => {
+        const u = WCUPS_USES[c];
+        return u ? `<span class="use-tag use-${u.kind}" title="${u.desc}">${u.label}</span>` : "";
+      })
+      .join("");
+    badges = `<div class="uses">${tags}</div>`;
+  }
+
+  let detail = "";
+  if (pfaf) {
+    const ratings = [];
+    if (pfaf.er) ratings.push(`<span class="rating" title="PFAF edibility rating ${pfaf.er}/5"><span class="rating-label">Edibility</span>${stars(pfaf.er)}</span>`);
+    if (pfaf.mr) ratings.push(`<span class="rating" title="PFAF medicinal rating ${pfaf.mr}/5"><span class="rating-label">Medicinal</span>${stars(pfaf.mr)}</span>`);
+    detail = `
+      ${ratings.length ? `<div class="ratings">${ratings.join("")}</div>` : ""}
+      ${pfaf.edible ? `<div class="edible-uses"><span class="eu-label">How to eat</span><p>${escapeHtml(pfaf.edible)}</p></div>` : ""}
+      ${pfaf.hazards ? `<div class="hazards"><span class="hz-label">⚠ Known hazards</span><p>${escapeHtml(pfaf.hazards)}</p></div>` : ""}
+    `;
+  }
+
+  // Sources line — PFAF's licence requires a prominent link wherever its data shows.
+  const credits = [`Use categories: Kew <a href="https://doi.org/10.5063/F1CV4G34" target="_blank" rel="noopener">WCUPS</a> (CC BY)`];
+  if (pfaf) credits.push(`edibility &amp; hazards: <a href="https://pfaf.org" target="_blank" rel="noopener">Plants For A Future</a> (CC BY-NC-SA)`);
+
+  return `
+    <h2>Edibility &amp; uses</h2>
+    ${badges}
+    ${detail}
+    <p class="uses-disclaimer">⚠ <strong>Documented uses, not a foraging or safety guide.</strong>
+      A plant not listed here may still be toxic, and many edible plants have poisonous parts or
+      look-alikes. Never eat a wild plant without confident, expert identification.
+      <br><span class="uses-credit">${credits.join(" · ")}</span></p>
+  `;
+}
+
 function renderWiki(w) {
   if (!w || !w.extract) return "";
   // Wikipedia content is CC-BY-SA — attribute clearly and link to source.
@@ -836,6 +903,7 @@ function renderSpecies(n) {
         ${renderAudio(n.audio)}
       </div>
       <div class="details">
+        ${renderUses(n)}
         ${renderWiki(n.wiki)}
         ${renderTraits(n.traits, { wingspan: n.wingspan })}
         ${renderObservations(n.observations)}
