@@ -114,28 +114,30 @@ function renderIucn(status, scientificName) {
     </div>`;
   }
   if (!current) return "";
-  // Official IUCN groupings span specific cell counts. We use flex-grow values
-  // matching the cell counts so the bracket labels above align perfectly with
-  // the ladder underneath.
-  const BRACKETS = [
-    { label: "Extinct",     span: 2, title: "EX + EW: gone from the wild, or entirely",
+  // Wikipedia-style scale (cf. the IUCN 3.1 status images): a greyscale row of
+  // category codes with the current one raised in a black box. "Extinct" and
+  // "Threatened" group labels bracket their cells; NT/LC sit under no label.
+  // The flex spans (2 / 3 / 2) match the cell counts so the brackets line up.
+  const GROUPS = [
+    { label: "Extinct",    span: 2, title: "EX + EW: gone from the wild, or entirely",
       href: "https://en.wikipedia.org/wiki/Extinction" },
-    { label: "Threatened",  span: 3, title: "CR + EN + VU: facing extinction risk",
+    { label: "Threatened", span: 3, title: "CR + EN + VU: facing extinction risk",
       href: "https://en.wikipedia.org/wiki/Threatened_species" },
-    { label: "Lower risk",  span: 2, title: "NT + LC: not currently threatened",
-      href: "https://en.wikipedia.org/wiki/Lower_Risk_conservation_status" },
+    { label: "",           span: 2, title: "" }, // NT + LC: unlabelled, as on Wikipedia
   ];
-  const brackets = BRACKETS.map((b) =>
-    `<a class="iucn-bracket" style="flex:${b.span}" href="${b.href}" target="_blank" rel="noopener" title="${b.title}">${b.label}</a>`,
+  const groups = GROUPS.map((g) =>
+    g.label
+      ? `<a class="iucn-group" style="flex:${g.span}" href="${g.href}" target="_blank" rel="noopener" title="${g.title}">${g.label}</a>`
+      : `<span class="iucn-group-spacer" style="flex:${g.span}"></span>`,
   ).join("");
-  const steps = IUCN_LADDER.map((s) => {
+  const cells = IUCN_LADDER.map((s) => {
     const isCurrent = s.key === key;
-    return `<a class="iucn-step iucn-${s.key}${isCurrent ? " current" : ""}" href="${s.href}" target="_blank" rel="noopener" title="${s.label} — ${s.desc}">${s.code}</a>`;
+    return `<a class="iucn-cell iucn-${s.key}${isCurrent ? " current" : ""}" href="${s.href}" target="_blank" rel="noopener" title="${s.label} — ${s.desc}">${s.code}</a>`;
   }).join("");
   return `
     <div class="iucn-block" title="IUCN Red List Conservation Status">
-      <div class="iucn-brackets">${brackets}</div>
-      <div class="iucn-ladder">${steps}</div>
+      <div class="iucn-groups">${groups}</div>
+      <div class="iucn-cells">${cells}</div>
       <div class="iucn-current-label">
         <a href="${current.href}" target="_blank" rel="noopener">${current.label}</a>
         (${versionLink})${refLink}

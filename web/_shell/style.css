@@ -193,72 +193,84 @@ main#view {
   border-radius: 4px;
 }
 
-.iucn-block { margin-top: 10px; max-width: 360px; }
-.iucn-brackets {
-  display: flex;
+.iucn-block { margin-top: 12px; max-width: 330px; }
+
+/* Wikipedia-style conservation-status scale (cf. the IUCN 3.1 status images):
+   a greyscale row of category codes with the current category raised in a black
+   box, and Extinct / Threatened group labels bracketing their cells. */
+.iucn-groups { display: flex; align-items: flex-end; }
+.iucn-group {
+  text-align: center;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--muted);
-  font-weight: 600;
-  margin-bottom: 3px;
-}
-.iucn-bracket {
-  text-align: center;
-  border-top: 1px solid var(--muted);
-  border-left: 1px solid var(--muted);
-  border-right: 1px solid var(--muted);
+  letter-spacing: 0.06em;
+  color: #6f6f6f;
+  font-weight: 700;
+  border: 1px solid #bdbdbd;
+  border-bottom: none;
   border-radius: 4px 4px 0 0;
-  padding: 2px 4px 1px;
-  margin: 0 1px;
-  cursor: help;
+  padding: 2px 4px;
+  margin: 0 1px -1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-decoration: none;
+  cursor: help;
 }
-.iucn-ladder {
+.iucn-group:hover { color: var(--fg); text-decoration: none; }
+.iucn-group-spacer { display: block; }
+.iucn-cells {
   display: flex;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
+  border-radius: 3px;
+}
+.iucn-cell {
+  flex: 1;
+  padding: 5px 0;
+  text-align: center;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
-}
-.iucn-step {
-  flex: 1;
-  padding: 5px 0;
-  text-align: center;
-  color: rgba(0, 0, 0, 0.55);
-  background: var(--card);
-  border-right: 1px solid var(--border);
+  border-right: 1px solid rgba(0, 0, 0, 0.07);
+  text-decoration: none;
   cursor: pointer;
   transition: filter 0.1s;
-  text-decoration: none;
 }
-.iucn-step:last-child { border-right: none; }
-.iucn-step:hover { filter: brightness(0.92); text-decoration: none; }
-.iucn-bracket { text-decoration: none; color: var(--muted); }
-.iucn-bracket:hover { color: var(--fg); text-decoration: none; }
-.iucn-aux { text-decoration: none; }
-.iucn-aux:hover { text-decoration: none; filter: brightness(0.97); }
-.iucn-step.iucn-lc { background: #cce8c6; color: #1f5d24; }
-.iucn-step.iucn-nt { background: #d8d3a3; color: #4d4416; }
-.iucn-step.iucn-vu { background: #f6cf6b; color: #6b4a0d; }
-.iucn-step.iucn-en { background: #ee9a4a; color: #5e2306; }
-.iucn-step.iucn-cr { background: #d2433a; color: #fff; }
-.iucn-step.iucn-ew { background: #6f5499; color: #fff; }
-.iucn-step.iucn-ex { background: #1a1a1a; color: #fff; }
-.iucn-step.current {
-  outline: 2px solid var(--fg);
-  outline-offset: -2px;
-  filter: brightness(1.05);
+.iucn-cell:first-child { border-radius: 3px 0 0 3px; }
+.iucn-cell:last-child { border-radius: 0 3px 3px 0; border-right: none; }
+.iucn-cell:hover { filter: brightness(0.94); text-decoration: none; }
+
+/* Very muted category tints for the inactive cells. */
+.iucn-cell.iucn-ex { background: #d6d6d6; color: #3a3a3a; }
+.iucn-cell.iucn-ew { background: #ded6e4; color: #4d3559; }
+.iucn-cell.iucn-cr { background: #f0d0cb; color: #8f2e21; }
+.iucn-cell.iucn-en { background: #f5ddc6; color: #8a4a18; }
+.iucn-cell.iucn-vu { background: #f5ecc1; color: #6e5d16; }
+.iucn-cell.iucn-nt { background: #e7ebc4; color: #565e18; }
+.iucn-cell.iucn-lc { background: #d2e8cb; color: #346a35; }
+
+/* The current category pops up in a fuller (still soft) shade of its colour. */
+.iucn-cell.current {
   font-weight: 800;
+  border-right: none;
+  border-radius: 3px;
+  margin-top: -4px;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
 }
+.iucn-cell.current.iucn-ex { background: #1a1a1a; color: #fff; }
+.iucn-cell.current.iucn-ew { background: #6f5499; color: #fff; }
+.iucn-cell.current.iucn-cr { background: #d2433a; color: #fff; }
+.iucn-cell.current.iucn-en { background: #ee9a4a; color: #5e2306; }
+.iucn-cell.current.iucn-vu { background: #f3c64f; color: #5e3f0a; }
+.iucn-cell.current.iucn-nt { background: #c6bd5c; color: #3c350c; }
+.iucn-cell.current.iucn-lc { background: #74c079; color: #123f18; }
 .iucn-current-label {
   display: block;
-  margin-top: 5px;
+  margin-top: 8px;
   font-size: 13px;
   color: var(--fg);
 }
@@ -276,7 +288,9 @@ main#view {
   border: 1px solid var(--border);
   color: var(--muted);
   cursor: help;
+  text-decoration: none;
 }
+.iucn-aux:hover { text-decoration: none; filter: brightness(0.97); }
 
 .grid {
   display: grid;
