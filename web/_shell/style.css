@@ -17,10 +17,10 @@
   --border: #38302a;
 }
 :root[data-theme="dark"] .card .thumb,
-:root[data-theme="dark"] .species-page .photo { background-color: #2a251d; background: #2a251d; }
-:root[data-theme="dark"] .range-map { background: #16242f; }
-:root[data-theme="dark"] .uses-disclaimer { background: #221d14; }
-:root[data-theme="dark"] .hazards { background: #2c1a15; border-color: #6e2a1c; }
+:root[data-theme="dark"] .species-page .photo { background-color: #2a251d; }
+:root[data-theme="dark"] .range-map { background-color: #16242f; }
+:root[data-theme="dark"] .uses-disclaimer { background-color: #221d14; }
+:root[data-theme="dark"] .hazards { background-color: #2c1a15; border-color: #6e2a1c; }
 :root[data-theme="dark"] .hazards .hz-label { color: #f0b3a6; }
 :root[data-theme="dark"] .hazards p { color: #e8c2b9; }
 
