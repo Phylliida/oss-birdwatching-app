@@ -4,6 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Living Things</title>
+    <script>
+      // Apply saved/OS theme before paint (no flash).
+      (function () {
+        try {
+          var t = localStorage.getItem("theme") ||
+            (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
     <style>
       :root {
         --bg: #faf7f1;
@@ -13,6 +23,17 @@
         --card: #ffffff;
         --border: #e6dfd2;
       }
+      :root[data-theme="dark"] {
+        --bg: #15120e; --fg: #e9e2d4; --muted: #9d9381;
+        --accent: #d8b87a; --card: #211c15; --border: #38302a;
+      }
+      :root[data-theme="dark"] .card .thumb { background-color: #2a251d; }
+      .theme-toggle {
+        margin-left: auto; flex: none; background: none;
+        border: 1px solid var(--border); border-radius: 999px; color: var(--muted);
+        cursor: pointer; font-size: 15px; line-height: 1; padding: 5px 9px;
+      }
+      .theme-toggle:hover { color: var(--fg); border-color: var(--accent); }
       * { box-sizing: border-box; }
       html, body { margin: 0; padding: 0; }
       body {
@@ -112,6 +133,7 @@
     <header id="topbar">
       <nav id="nav">
         <a href="/" class="home">Living things</a>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">☾</button>
       </nav>
       <div id="crumbs"></div>
     </header>
@@ -271,6 +293,20 @@
       }
 
       window.addEventListener("hashchange", render);
+      (function wireThemeToggle() {
+        var btn = document.getElementById("theme-toggle");
+        if (!btn) return;
+        function apply(t) {
+          document.documentElement.setAttribute("data-theme", t);
+          try { localStorage.setItem("theme", t); } catch (e) {}
+          btn.textContent = t === "dark" ? "☀" : "☾";
+          btn.title = t === "dark" ? "Switch to light mode" : "Switch to dark mode";
+        }
+        apply(document.documentElement.getAttribute("data-theme") || "light");
+        btn.addEventListener("click", function () {
+          apply(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+        });
+      })();
       (async () => {
         try {
           const res = await fetch("/landing.json");

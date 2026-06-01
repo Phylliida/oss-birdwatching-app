@@ -6,6 +6,23 @@
   --card: #ffffff;
   --border: #e6dfd2;
 }
+/* Dark mode: override the palette, plus a few hardcoded light surfaces. The
+   colourful badges (IUCN, use/grow tags) keep their hues — they read fine. */
+:root[data-theme="dark"] {
+  --bg: #15120e;
+  --fg: #e9e2d4;
+  --muted: #9d9381;
+  --accent: #d8b87a;
+  --card: #211c15;
+  --border: #38302a;
+}
+:root[data-theme="dark"] .card .thumb,
+:root[data-theme="dark"] .species-page .photo { background-color: #2a251d; background: #2a251d; }
+:root[data-theme="dark"] .range-map { background: #16242f; }
+:root[data-theme="dark"] .uses-disclaimer { background: #221d14; }
+:root[data-theme="dark"] .hazards { background: #2c1a15; border-color: #6e2a1c; }
+:root[data-theme="dark"] .hazards .hz-label { color: #f0b3a6; }
+:root[data-theme="dark"] .hazards p { color: #e8c2b9; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -38,6 +55,19 @@ header#topbar {
 }
 #nav > a { color: var(--muted); }
 #nav > a.active { color: var(--fg); }
+.theme-toggle {
+  margin-left: 12px;
+  flex: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 5px 9px;
+}
+.theme-toggle:hover { color: var(--fg); border-color: var(--accent); }
 #nav > a.back-home {
   color: var(--accent);
   padding-right: 10px;

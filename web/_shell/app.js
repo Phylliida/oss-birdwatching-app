@@ -1444,6 +1444,20 @@ function wireSearch() {
   });
 }
 
+function wireThemeToggle() {
+  const btn = document.getElementById("theme-toggle");
+  if (!btn) return;
+  const apply = (t) => {
+    document.documentElement.setAttribute("data-theme", t);
+    try { localStorage.setItem("theme", t); } catch (e) {}
+    btn.textContent = t === "dark" ? "☀" : "☾";
+    btn.title = t === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  };
+  apply(document.documentElement.getAttribute("data-theme") || "light");
+  btn.addEventListener("click", () =>
+    apply(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark"));
+}
+
 (async function init() {
   // Load countries + states up-front for the heatmap. countries.geojson is
   // ~250 KB; states.geojson is ~1.5 MB. Both cache on first load and unlock
@@ -1464,5 +1478,6 @@ function wireSearch() {
   }
   searchIndex = buildSearchIndex();
   wireSearch();
+  wireThemeToggle();
   route();
 })();
