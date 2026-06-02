@@ -85,6 +85,28 @@ node scripts/parse-gbif-years.mjs          # -> data/described-years.json
 # then rebuild (build-plantae-tree.mjs / 07-build-tree.mjs) to pick it up
 ```
 
+## Plant photos (iNaturalist Open Data)
+
+Most plants have no Wikidata/Commons photo, so we fill in from the **iNaturalist
+Open Data** bulk dump (CC-licensed observation photos) rather than the slow
+per-species API. We pick research-grade observations + the observer's primary
+photo + an accepted CC licence. This roughly doubles plant photo coverage
+(~16% → ~35%).
+
+```bash
+mkdir -p data/inat-opendata
+for f in taxa observers observations photos; do            # ~30 GB total
+  curl -L "https://inaturalist-open-data.s3.amazonaws.com/$f.csv.gz" \
+    -o "data/inat-opendata/$f.csv.gz"
+done
+node --max-old-space-size=12288 scripts/parse-inat-opendata.mjs   # needs a big heap
+node scripts/build-plantae-tree.mjs                               # surface the photos
+```
+
+(The open data has no curated "taxon photos", only observation photos; we keep
+any curated API-sourced photos already in `data/plantae/inat.json` and fill the
+rest from the dump.)
+
 ## Licence
 
 App code: MIT. Bundled/displayed data follows each source's licence with

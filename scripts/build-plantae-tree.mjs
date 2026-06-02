@@ -99,8 +99,21 @@ for (const sp of species) {
   const genusId = parentId; // chain always ends at genus (family+genus guaranteed)
 
   const wd = wikidata[sp.scientificName];
-  const image = wd && wd.image ? wd.image.replace(/^http:\/\//, "https://") : null;
   const inatRec = inat[sp.scientificName];
+  const inatPhotos = inatRec && inatRec.photos && inatRec.photos.length
+    ? inatRec.photos.map((p) => ({ ...p, url: largeInat(p.url) })) : null;
+  // Primary photo: Wikidata/Commons if we have it, else fall back to the first
+  // iNat photo so the card thumbnail isn't blank.
+  let image = wd && wd.image ? wd.image.replace(/^http:\/\//, "https://") : null;
+  let imageSource = image ? "commons" : null;
+  let imageAttribution = null;
+  let extraPhotos = inatPhotos;
+  if (!image && inatPhotos) {
+    image = inatPhotos[0].url;
+    imageSource = "inat";
+    imageAttribution = inatPhotos[0].attribution || null;
+    extraPhotos = inatPhotos.length > 1 ? inatPhotos.slice(1) : null;
+  }
   const altNames = (() => {
     const m = wd && wd.names; if (!m) return null;
     const out = { ...m }; delete out.en;
@@ -111,13 +124,14 @@ for (const sp of species) {
     name: sp.scientificName,
     commonName: (wd && wd.names && wd.names.en) || null,
     image,
-    imageSource: image ? "commons" : null,
+    imageSource,
+    imageAttribution,
     countries: countriesFor(sp.scientificName),
     observations: distillGbif(sp.scientificName),
     wiki: wiki[sp.scientificName] || null,
     iucn: (wd && wd.iucn) || null,
     altNames,
-    extraPhotos: inatRec && inatRec.photos && inatRec.photos.length ? inatRec.photos.map((p) => ({ ...p, url: largeInat(p.url) })) : null,
+    extraPhotos,
     inatId: (inatRec && inatRec.taxonId) || null,
     uses: wcups[sp.scientificName] || null,
     pfaf: pfaf[sp.scientificName] || null,
@@ -183,7 +197,7 @@ for (const n of nodes.values()) {
     const heavy = { id: n.id, type: "species", name: n.name, parent: n.parent };
     if (n.commonName) heavy.commonName = n.commonName;
     if (n.image) heavy.image = n.image;
-    for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "uses", "pfaf", "describedYear", "describedBy", "gbifKey", "imageSource"]) {
+    for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "uses", "pfaf", "describedYear", "describedBy", "gbifKey", "imageSource", "imageAttribution"]) {
       const v = n[k];
       if (v == null) continue;
       if (Array.isArray(v) && v.length === 0) continue;
