@@ -46,7 +46,7 @@ for (const d of await readdir("web", { withFileTypes: true })) {
 if (existsSync("web/plantae/tree.json")) {
   const pt = JSON.parse(await readFile("web/plantae/tree.json", "utf8"));
   for (const n of Object.values(pt.nodes)) {
-    if (["phylum", "class", "order", "family"].includes(n.type) && n.name) plantNames.add(n.name);
+    if (["root", "phylum", "class", "order", "family"].includes(n.type) && n.name) plantNames.add(n.name);
   }
 }
 console.log(`${animalNames.size} animal names, ${plantNames.size} plant names`);
@@ -75,18 +75,33 @@ function commonsFilePath(src) {
   return m ? `https://commons.wikimedia.org/wiki/Special:FilePath/${m[1]}` : https;
 }
 
-// Wikipedia REST summary of the (correct, Wikidata-supplied) article — gives the
-// intro extract plus a lead image to fall back on when the taxon item has no P18.
+// Wikipedia REST summary — the intro extract + lead image + canonical title/url.
+// Retries (transient REST failures were silently dropping extracts before).
 async function restSummary(title) {
-  try {
-    const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
-      { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(15000) });
-    if (!res.ok) return null;
-    const j = await res.json();
-    const src = j.originalimage?.source || j.thumbnail?.source;
-    return { image: src ? commonsFilePath(src) : null, extract: j.extract || null };
-  } catch { return null; }
+  for (let a = 0; a < 4; a++) {
+    try {
+      const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+        { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(15000) });
+      if (res.status === 404) return null;
+      if (res.status === 429 || res.status >= 500) { await sleep(800 * 2 ** a); continue; }
+      if (!res.ok) return null;
+      const j = await res.json();
+      if (j.type === "disambiguation") return null;
+      const src = j.originalimage?.source || j.thumbnail?.source;
+      return {
+        image: src ? commonsFilePath(src) : null,
+        extract: j.extract || null,
+        title: j.title || title,
+        page: j.content_urls?.desktop?.page || null,
+      };
+    } catch { if (a < 3) await sleep(800 * 2 ** a); }
+  }
+  return null;
 }
+
+// Unambiguous higher-rank taxon name suffixes — safe to look up by Wikipedia
+// title when Wikidata P225 has no match (these never collide with non-taxa).
+const HIGHER_RANK_RE = /(phyta|phytina|opsida|phyceae|idae|ales|ineae|aceae|mycota|mycetes|bryophyta)$/;
 
 // ASK returns a boolean (not bindings), so query it directly.
 async function askKingdom(qid, kingdomQ) {
@@ -153,8 +168,15 @@ async function fetchKingdom(names, kingdomKey) {
     }
     for (const name of batch) {
       const matches = byName.has(name) ? [...byName.get(name).values()] : [];
-      if (!matches.length) { done++; continue; }
-      const r = await resolve(matches, kingdomQ);
+      let r = matches.length ? await resolve(matches, kingdomQ) : null;
+      // P225 found nothing — for unambiguous higher-rank names (and the Plantae
+      // root) fall back to the Wikipedia article of the same title.
+      if (!r && (HIGHER_RANK_RE.test(name) || name === "Plantae")) {
+        const s = await restSummary(name);
+        if (s && (s.extract || s.image)) {
+          r = { title: s.title || name, page: s.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(name.replace(/ /g, "_"))}`, image: s.image, extract: s.extract };
+        }
+      }
       if (r) { out[name] = r; if (r.image) withImg++; }
       done++;
     }
