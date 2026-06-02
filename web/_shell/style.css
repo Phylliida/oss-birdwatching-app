@@ -185,6 +185,7 @@ main#view {
   font-weight: 700;
 }
 .title-block .scientific { font-style: italic; }
+.title-block .described { margin-top: 4px; font-size: 13px; color: var(--muted); }
 .syn-list { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; font-size: 12px; }
 .syn-row { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
 .syn-tag {

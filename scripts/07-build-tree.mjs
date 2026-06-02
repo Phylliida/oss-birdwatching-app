@@ -105,6 +105,10 @@ const ebirdCodes = existsSync("data/ebird-codes.json")
 const synonyms = existsSync("data/synonyms.json")
   ? JSON.parse(await readFile("data/synonyms.json", "utf8"))
   : {};
+// Year of first description — see scripts/parse-gbif-years.mjs (GBIF backbone, CC BY).
+const years = existsSync("data/described-years.json")
+  ? JSON.parse(await readFile("data/described-years.json", "utf8"))
+  : {};
 
 const MIN_COUNTRY_OBS = 10;
 function countriesFor(name) {
@@ -333,6 +337,8 @@ for (const sp of species) {
     iucn: iucn[sp.scientificName] || wdExtras[sp.scientificName]?.iucn || null,
     ebird: ebirdCodes[sp.scientificName] || null,
     synonyms: synonyms[sp.scientificName] || null,
+    describedYear: (years[sp.scientificName] || {}).year || null,
+    describedBy: (years[sp.scientificName] || {}).author || null,
   });
 
   // Wire children (idempotent — only push if missing).

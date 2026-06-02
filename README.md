@@ -65,6 +65,22 @@ Both layers are optional — if a file is missing, that part of the section simp
 doesn't appear (a plant with no data shows no section, rather than implying it's
 safe to eat).
 
+## Species discovery years
+
+Each species page shows the year it was first described, from the **GBIF
+backbone taxonomy** bulk dump (CC BY) — ~96% of plants, ~100% of birds. The year
+comes from the author citation for animals (e.g. *Corvus corax* Linnaeus, 1758)
+and the publication string for plants, preferring the basionym year so
+recombinations still report the original description.
+
+```bash
+mkdir -p data/gbif-backbone
+curl -L https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz \
+  -o data/gbif-backbone/simple.txt.gz      # ≈488 MB
+node scripts/parse-gbif-years.mjs          # -> data/described-years.json
+# then rebuild (build-plantae-tree.mjs / 07-build-tree.mjs) to pick it up
+```
+
 ## Licence
 
 App code: MIT. Bundled/displayed data follows each source's licence with

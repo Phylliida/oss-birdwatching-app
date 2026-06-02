@@ -33,6 +33,8 @@ const wcups = (await loadJson("data/edibility/wcups.json")) || {};
 // PFAF edibility rating + how-to-eat + known hazards — see scripts/parse-pfaf.mjs.
 // CC BY-NC-SA, Plants For A Future (prominent link kept in the UI).
 const pfaf = (await loadJson("data/edibility/pfaf.json")) || {};
+// Year of first description — see scripts/parse-gbif-years.mjs (GBIF backbone, CC BY).
+const years = (await loadJson("data/described-years.json")) || {};
 console.log(`Loaded ${species.length.toLocaleString()} species; wikidata ${Object.keys(wikidata).length.toLocaleString()}, wiki ${Object.keys(wiki).length.toLocaleString()}, gbif ${Object.keys(gbif).length.toLocaleString()}, inat ${Object.keys(inat).length.toLocaleString()}`);
 
 // Upgrade iNat photo URLs to the 1024px "large" variant.
@@ -119,6 +121,8 @@ for (const sp of species) {
     inatId: (inatRec && inatRec.taxonId) || null,
     uses: wcups[sp.scientificName] || null,
     pfaf: pfaf[sp.scientificName] || null,
+    describedYear: (years[sp.scientificName] || {}).year || null,
+    describedBy: (years[sp.scientificName] || {}).author || null,
     gbifKey: sp.gbifKey,
   });
 }
@@ -179,7 +183,7 @@ for (const n of nodes.values()) {
     const heavy = { id: n.id, type: "species", name: n.name, parent: n.parent };
     if (n.commonName) heavy.commonName = n.commonName;
     if (n.image) heavy.image = n.image;
-    for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "uses", "pfaf", "gbifKey", "imageSource"]) {
+    for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "uses", "pfaf", "describedYear", "describedBy", "gbifKey", "imageSource"]) {
       const v = n[k];
       if (v == null) continue;
       if (Array.isArray(v) && v.length === 0) continue;

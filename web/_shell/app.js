@@ -951,6 +951,7 @@ function renderSpecies(n) {
       <div class="rank">Species</div>
       <h1>${n.commonName || n.name}</h1>
       ${n.commonName ? `<div class="scientific">${n.name}</div>` : ""}
+      ${n.describedYear ? `<div class="described">First described <strong>${n.describedYear}</strong>${n.describedBy ? ` · ${n.describedBy}` : ""}</div>` : ""}
       ${n.synonyms ? `<div class="syn-list">
         ${n.synonyms.ebird ? `<span class="syn-row"><span class="syn-tag">eBird</span><em>${n.synonyms.ebird}</em></span>` : ""}
         ${n.synonyms.birdtree ? `<span class="syn-row"><span class="syn-tag">BirdTree</span><em>${n.synonyms.birdtree}</em></span>` : ""}
