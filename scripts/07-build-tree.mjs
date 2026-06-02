@@ -430,7 +430,8 @@ if (existsSync("data/higher-taxa-wiki.json")) {
   catch { higherWiki = {}; }
 }
 function ownWiki(n) {
-  return higherWiki[n.name] || (n.commonName ? higherWiki[n.commonName] : null) || null;
+  const a = higherWiki.animal || {};
+  return a[n.name] || (n.commonName ? a[n.commonName] : null) || null;
 }
 
 // Light fields the skeleton needs for browse, search, /nearby filter.

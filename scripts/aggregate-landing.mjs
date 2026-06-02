@@ -60,7 +60,7 @@ for (const [viewKey, cacheKey] of [
   ["gymnosperms", "Gymnosperms"],
   ["angiosperms", "Angiosperms"],
 ]) {
-  const h = higher[cacheKey];
+  const h = (higher.abstract || {})[cacheKey];
   out._higher[viewKey] = { image: h?.image || null, wikiUrl: h?.page || null };
 }
 

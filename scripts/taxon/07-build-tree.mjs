@@ -170,7 +170,8 @@ if (existsSync("data/higher-taxa-wiki.json")) {
   catch { higherWiki = {}; }
 }
 function ownWiki(n) {
-  return higherWiki[n.name] || (n.commonName ? higherWiki[n.commonName] : null) || null;
+  const p = higherWiki.plant || {};
+  return p[n.name] || (n.commonName ? p[n.commonName] : null) || null;
 }
 
 const SKELETON_SPECIES_FIELDS = new Set(["id", "type", "name", "commonName", "parent", "image", "countries", "states"]);

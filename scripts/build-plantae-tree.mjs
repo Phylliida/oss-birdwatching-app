@@ -149,7 +149,8 @@ for (const n of nodes.values()) { if (n._count != null) n.speciesCount = n._coun
 
 // reprImg: a node's own Wikipedia photo if we have one, else first descendant.
 function ownWiki(n) {
-  return higher[n.name] || (n.commonName ? higher[n.commonName] : null) || null;
+  const p = higher.plant || {};
+  return p[n.name] || (n.commonName ? p[n.commonName] : null) || null;
 }
 const reprImg = new Map();
 function computeReprImg(id) {
