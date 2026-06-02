@@ -73,10 +73,14 @@ comes from the author citation for animals (e.g. *Corvus corax* Linnaeus, 1758)
 and the publication string for plants, preferring the basionym year so
 recombinations still report the original description.
 
+The describer is shown by full name where possible ("Carl Linnaeus", not "L." /
+"Linnaeus") via a Wikidata author-abbreviation lookup (CC0).
+
 ```bash
 mkdir -p data/gbif-backbone
 curl -L https://hosted-datasets.gbif.org/datasets/backbone/current/simple.txt.gz \
   -o data/gbif-backbone/simple.txt.gz      # ≈488 MB
+node scripts/fetch-author-names.mjs        # -> data/author-names.json (full names)
 node scripts/parse-gbif-years.mjs          # -> data/described-years.json
 # then rebuild (build-plantae-tree.mjs / 07-build-tree.mjs) to pick it up
 ```

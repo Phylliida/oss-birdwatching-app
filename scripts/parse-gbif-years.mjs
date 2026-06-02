@@ -68,7 +68,17 @@ for await (const line of rl) {
   }
 }
 
-for (const k in out) if (out[k]) delete out[k]._accepted;
+// Expand the author citation to a full name where we can (Wikidata P428/P835,
+// see scripts/fetch-author-names.mjs): "L." / "Linnaeus" -> "Carl Linnaeus".
+// Compound authors (X & Y, X ex Y) are left in citation form.
+let authorNames = {};
+try { authorNames = JSON.parse(await readFile("data/author-names.json", "utf8")); } catch { /* optional */ }
+for (const k in out) {
+  if (!out[k]) continue;
+  delete out[k]._accepted;
+  const a = out[k].author;
+  if (a && authorNames[a]) out[k].author = authorNames[a];
+}
 await writeFile("data/described-years.json", JSON.stringify(out));
 console.log(`\nWrote data/described-years.json — ${Object.keys(out).length.toLocaleString()} species with a year`);
 console.log(`  plants: ${plantHits.toLocaleString()} / ${plantKeyToName.size.toLocaleString()} (${(plantHits / plantKeyToName.size * 100).toFixed(1)}%)`);
