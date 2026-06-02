@@ -41,6 +41,14 @@ for (const d of await readdir("web", { withFileTypes: true })) {
   if (!d.isDirectory() || ["birds", "plantae", "_shell"].includes(d.name)) continue;
   for (const n of await namesFrom(d.name)) plantNames.add(n);
 }
+// Also the unified plantae tree's higher ranks (phylum/class/order/family) so
+// those pages get a summary too. Skip its ~20K genera — too many for the trunk.
+if (existsSync("web/plantae/tree.json")) {
+  const pt = JSON.parse(await readFile("web/plantae/tree.json", "utf8"));
+  for (const n of Object.values(pt.nodes)) {
+    if (["phylum", "class", "order", "family"].includes(n.type) && n.name) plantNames.add(n.name);
+  }
+}
 console.log(`${animalNames.size} animal names, ${plantNames.size} plant names`);
 
 // ---- Wikidata helpers ----------------------------------------------------
@@ -67,16 +75,16 @@ function commonsFilePath(src) {
   return m ? `https://commons.wikimedia.org/wiki/Special:FilePath/${m[1]}` : https;
 }
 
-// Wikipedia REST summary — used only to grab a lead image for the (correct,
-// Wikidata-supplied) article when the taxon item has no P18.
-async function restThumb(title) {
+// Wikipedia REST summary of the (correct, Wikidata-supplied) article — gives the
+// intro extract plus a lead image to fall back on when the taxon item has no P18.
+async function restSummary(title) {
   try {
     const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
       { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(15000) });
     if (!res.ok) return null;
     const j = await res.json();
     const src = j.originalimage?.source || j.thumbnail?.source;
-    return src ? commonsFilePath(src) : null;
+    return { image: src ? commonsFilePath(src) : null, extract: j.extract || null };
   } catch { return null; }
 }
 
@@ -107,9 +115,13 @@ async function resolve(matches, kingdomQ) {
   let image = chosen.image ? commonsFilePath(chosen.image) : null;
   const page = chosen.article || null;
   const title = page ? titleFromArticle(page) : null;
-  if (!image && title) image = await restThumb(title); // lead image of the correct article
+  let extract = null;
+  if (title) {
+    const sum = await restSummary(title); // intro text (+ image fallback) of the correct article
+    if (sum) { extract = sum.extract; if (!image) image = sum.image; }
+  }
   if (!image && !page) return null;
-  return { title, page, image };
+  return { title, page, image, extract };
 }
 
 async function fetchKingdom(names, kingdomKey) {
@@ -158,8 +170,8 @@ async function fetchAbstract() {
   const ABSTRACT = [["Animalia", "Animal"], ["Plantae", "Plant"], ["Gymnosperms", "Gymnosperm"], ["Angiosperms", "Flowering plant"]];
   const out = {};
   for (const [key, title] of ABSTRACT) {
-    const img = await restThumb(title);
-    out[key] = { title, page: `https://en.wikipedia.org/wiki/${title.replace(/ /g, "_")}`, image: img };
+    const sum = await restSummary(title);
+    out[key] = { title, page: `https://en.wikipedia.org/wiki/${title.replace(/ /g, "_")}`, image: sum?.image || null, extract: sum?.extract || null };
     await sleep(150);
   }
   return out;

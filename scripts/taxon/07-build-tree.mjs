@@ -206,7 +206,7 @@ for (const n of nodes.values()) {
     const w = ownWiki(n);
     const r = (w && w.image) || reprImg.get(n.id);
     if (r) light.reprImg = r;
-    if (w && w.page) { light.wikiUrl = w.page; if (w.title) light.wikiTitle = w.title; }
+    if (w && w.page) { light.wikiUrl = w.page; if (w.title) light.wikiTitle = w.title; if (w.extract) light.wikiExtract = w.extract; }
     skeleton[n.id] = light;
   }
 }

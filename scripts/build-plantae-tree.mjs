@@ -195,7 +195,7 @@ for (const n of nodes.values()) {
     const w = ownWiki(n);
     const r = (w && w.image) || reprImg.get(n.id);
     if (r) light.reprImg = r;
-    if (w && w.page) { light.wikiUrl = w.page; if (w.title) light.wikiTitle = w.title; }
+    if (w && w.page) { light.wikiUrl = w.page; if (w.title) light.wikiTitle = w.title; if (w.extract) light.wikiExtract = w.extract; }
     if (n.type === "genus") {
       // Leaf of the trunk: its species live in a chunk, fetched on demand.
       light.chunkId = n.id;

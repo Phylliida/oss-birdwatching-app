@@ -820,9 +820,16 @@ function renderClade(n) {
     ? `<div class="scientific">${n.name}</div>`
     : "";
   const cards = n.children.map((cid) => cardFor(node(cid))).join("");
-  const wikiLink = n.wikiUrl
-    ? `<p class="clade-wiki"><a href="${n.wikiUrl}" target="_blank" rel="noopener">See Wikipedia article →</a></p>`
-    : "";
+  // Wikipedia summary at the top of the clade page; falls back to a bare link.
+  const wikiBlock = n.wikiExtract
+    ? `<div class="wiki clade-summary">
+         <p class="wiki-extract">${n.wikiExtract}</p>
+         <p class="wiki-more"><a href="${n.wikiUrl}" target="_blank" rel="noopener">Read full article on Wikipedia →</a></p>
+         <p class="wiki-credit">Text from Wikipedia, CC BY-SA</p>
+       </div>`
+    : n.wikiUrl
+      ? `<p class="clade-wiki"><a href="${n.wikiUrl}" target="_blank" rel="noopener">See Wikipedia article →</a></p>`
+      : "";
 
   $view.innerHTML = `
     <div class="title-block">
@@ -830,8 +837,8 @@ function renderClade(n) {
       <h1>${title}</h1>
       ${sub}
       <div class="meta">${n.children.length} ${n.children[0] ? RANK_LABEL[node(n.children[0]).type].toLowerCase() : ""}${n.children.length === 1 ? "" : "s"} · ${n.speciesCount} species total</div>
-      ${wikiLink}
     </div>
+    ${wikiBlock}
     <div class="grid">${cards}</div>
   `;
 }
