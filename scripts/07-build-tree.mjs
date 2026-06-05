@@ -23,12 +23,15 @@ const localImage = new Map(); // slug → extension (main photos: s-Genus-specie
 const localSecondary = new Map(); // "{slug}-{variant}" → extension
 if (existsSync("data/images")) {
   for (const f of await readdir("data/images")) {
-    const m = f.match(/^(s-[A-Za-z]+-[a-z-]+)\.(jpg|jpeg|png|webp|gif)$/i);
-    if (m) { localImage.set(m[1], m[2].toLowerCase()); continue; }
-    // Secondary photo: s-Genus-species-{variant}.ext where variant is
-    // adult-male / adult-female / juvenile / adult / extra-{n}.
+    // Secondary photo FIRST (more specific): s-Genus-species-{variant}.ext where
+    // variant is adult-male / adult-female / juvenile / adult / extra-{n}. The
+    // main-photo regex below would otherwise greedily swallow these — its
+    // [a-z-]+ epithet group matches the variant suffix too — and register them
+    // as bogus main photos, so the labeled strip would stream remotely instead.
     const m2 = f.match(/^(s-[A-Za-z]+-[a-z-]+)-(adult-male|adult-female|juvenile|adult|extra-\d+)\.(jpg|jpeg|png|webp|gif)$/i);
-    if (m2) localSecondary.set(`${m2[1]}-${m2[2].toLowerCase()}`, m2[3].toLowerCase());
+    if (m2) { localSecondary.set(`${m2[1]}-${m2[2].toLowerCase()}`, m2[3].toLowerCase()); continue; }
+    const m = f.match(/^(s-[A-Za-z]+-[a-z-]+)\.(jpg|jpeg|png|webp|gif)$/i);
+    if (m) localImage.set(m[1], m[2].toLowerCase());
   }
 }
 function findLocalSecondary(slug, variant) {
