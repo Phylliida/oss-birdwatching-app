@@ -13,7 +13,7 @@
 // Usage:  node scripts/build-plantae-tree.mjs
 
 import { readFile, writeFile, mkdir, readdir, unlink, copyFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 
 const DATA = "data/plantae";
 const WEB = "web/plantae";
@@ -41,6 +41,19 @@ console.log(`Loaded ${species.length.toLocaleString()} species; wikidata ${Objec
 function largeInat(url) {
   if (!url) return url;
   return url.replace(/\/(square|small|medium)\.(jpe?g|png|webp|gif)(\?|$|#)/i, "/large.$2$3");
+}
+
+// Prefer a locally-downloaded copy (data/images/inat-<id>.<ext>, served at
+// /images/) when present — that's the offline path; otherwise stream the large
+// version from iNaturalist. See scripts/download-inat-photos.mjs.
+const localImages = new Set(existsSync("data/images") ? readdirSync("data/images") : []);
+function resolveInat(url) {
+  const m = url && url.match(/\/photos\/(\d+)\/\w+\.(\w+)/);
+  if (m) {
+    const fn = `inat-${m[1]}.${m[2].toLowerCase()}`;
+    if (localImages.has(fn)) return `/images/${fn}`;
+  }
+  return largeInat(url);
 }
 
 const MIN_COUNTRY_OBS = 10;
@@ -101,7 +114,7 @@ for (const sp of species) {
   const wd = wikidata[sp.scientificName];
   const inatRec = inat[sp.scientificName];
   const inatPhotos = inatRec && inatRec.photos && inatRec.photos.length
-    ? inatRec.photos.map((p) => ({ ...p, url: largeInat(p.url) })) : null;
+    ? inatRec.photos.map((p) => ({ ...p, url: resolveInat(p.url) })) : null;
   // Primary photo: Wikidata/Commons if we have it, else fall back to the first
   // iNat photo so the card thumbnail isn't blank.
   let image = wd && wd.image ? wd.image.replace(/^http:\/\//, "https://") : null;

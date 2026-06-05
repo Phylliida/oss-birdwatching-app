@@ -4,286 +4,187 @@ What this project is, what's been built, what's left, and how to keep going.
 
 ## What it is
 
-A static, offline-friendly, non-commercial tree-of-life browser. Top-level
-landing at `/` shows kingdoms → groups → apps. Each "app" is a hierarchical
-species browser for a specific clade (Birds, Conifers, Oaks, etc.) and shares
-a single SPA shell.
+A static, offline-friendly, non-commercial **tree-of-life browser**. Vanilla
+HTML/JS/CSS, no framework. Landing page at `/` shows kingdoms → groups, and from
+there you traverse into two deep species browsers that share one SPA shell:
 
-## Apps shipped
+- **`/birds/`** — all ~11,227 birds (the original, most feature-dense app).
+- **`/plantae/`** — a single unified, lazily-loaded tree of **every plant in
+  GBIF's backbone (~436,707 species)**: Kingdom → phylum → class → order →
+  family → genus → species. This is the headline thing; it replaced the older
+  idea of ~16 separate curated clade apps.
 
-17 in total, all sharing `web/_shell/`:
+The 16 clade apps (`/oaks/`, `/palms/`, …) still build and exist but are now
+**superseded/orphaned** — the landing's Plantae card goes to `/plantae/`, not to
+them. They're kept because their per-clade iNat run produced curated photos that
+were merged into the unified tree.
 
-| Path | Clade | Notes |
-|---|---|---|
-| `/birds/` | Aves | 11,227 species — the most feature-complete app |
-| `/trees/` | Pinopsida (Conifers) | 9 families, 1,160 taxa |
-| `/cycads/` | Cycadopsida | ~340 living, includes fossils |
-| `/ginkgo/` | Ginkgoopsida | 1 living species + fossils |
-| `/gnetales/` | Gnetopsida | Welwitschia, Gnetum, Ephedra |
-| `/magnolias/` | Magnoliaceae | |
-| `/laurels/` | Lauraceae | Avocado, cinnamon, bay |
-| `/palms/` | Arecaceae | |
-| `/oaks/` | Quercus | |
-| `/birches/` | Betulaceae | |
-| `/maples/` | Acer | |
-| `/willows/` | Salicaceae | |
-| `/figs/` | Ficus | |
-| `/acacias/` | Acacia | |
-| `/rosaceae/` | Rose family | Apples, cherries, plums |
-| `/myrtaceae/` | Myrtle family | Excludes Eucalyptus (its own app) |
-| `/eucalypts/` | Eucalyptus | |
+## Feature surface
 
-## Feature surface (sub-apps)
+**Species page** (a card is a child of the tree; click to go deeper):
+- Photo with attribution + licence (Commons via Wikidata P18, or iNaturalist).
+  When there's no Commons photo, the first iNat photo becomes the card thumbnail.
+- **Edibility & uses** (plants) — Kew WCUPS category flags (Human food / Poison /
+  Medicine / …) + Plants For A Future detail (1–5 rating, how-to-eat, **Known
+  hazards**). Framed as documented uses, *not* a foraging guide; toxicity shown
+  as prominently as edibility; absence shows nothing (never implies "safe").
+- **Growing & cultivation** (plants, PFAF) — decoded conditions grid (light,
+  moisture, soil, pH, hardiness, habit, growth rate), tolerance tags, plus
+  habitat / native range / cultivation / propagation prose.
+- **First described** — year + full discoverer name ("First described 1758 ·
+  Carl Linnaeus"), from the GBIF backbone + a Wikidata author-name lookup.
+- Wikipedia summary (CC-BY-SA credit + link).
+- GBIF "Where & When" with a world heatmap; IUCN badge (Wikipedia-style scale,
+  muted colours); multilingual names; "closest relatives"; iNaturalist link.
+- Birds also: AVONET traits, xeno-canto audio + sonogram, IOC subspecies,
+  eBird code, labeled photo strip (Male/Female/Juvenile/Adult), cross-taxonomy
+  synonyms.
 
-Per species page:
-- Photo with attribution (Wikimedia Commons + iNat, license-filtered)
-- Audio + sonogram (birds only — xeno-canto)
-- Wikipedia summary with CC-BY-SA credit + link
-- AVONET traits (birds only) and Wikidata wingspan
-- GBIF observation summary (Where & When) with **world heatmap**
-- Sister species (BirdTree for birds, OToL for plants)
-- Subspecies (birds, from IOC)
-- Multilingual common names (Wikidata)
-- IUCN Red List badge with Wikipedia-style 7-step ladder + bracket labels
-- eBird code (birds) + iNat species page link
-- Cross-taxonomy synonyms (BirdLife / eBird / BirdTree disagreements)
-- "Closest relatives" with Mya divergence (birds) or edge distance (plants)
-- Labeled photo strip: Male / Female / Juvenile / Adult variants (birds)
+**Clade page** (order/class/family/…): Wikipedia summary at the top + the
+taxon's own lead photo + child cards.
 
-Per app:
-- Browseable tree (Order → Family → Genus → Species or clade equivalent)
-- Search box across all clades in the app
-- "Near me" filter using offline point-in-polygon on Natural Earth
-- About page with per-source citations (dynamic per taxon root)
+**App-wide:** in-app search, "Near me" offline point-in-polygon filter (birds;
+plants stream/empty), About page, and a **dark-mode toggle** (☾/☀ in the nav,
+persisted in localStorage, respects `prefers-color-scheme`).
 
 ## Architecture
 
-### Skeleton + chunks
+### Birds: skeleton + chunks
+`web/birds/tree.json` is a full light skeleton of every node; heavy per-species
+data lives in `web/birds/chunks/<chunkId>.json` (chunk root = first node with
+`speciesCount ≤ 1000`). ~8.5 MB skeleton; chunks load on demand.
 
-Initial `tree.json` is a lightweight skeleton: every node with `id`, `name`,
-`commonName`, `parent`, `children`, plus `image` URL and the iNat-friendly
-fields (`countries[]`, `states[]`, `chunkId`).
+### Plantae: lazy trunk + genus chunks (the big one)
+436K species is too big for one skeleton, so `scripts/build-plantae-tree.mjs`
+emits:
+- **`web/plantae/tree.json`** — a "trunk" with `lazy: true` holding every node
+  **down to genus** (~21.7K nodes, ~5 MB), loaded up front. Genus nodes are
+  stubs carrying `chunkId` + `lazyChildren: true`.
+- **`web/plantae/chunks/<genusId>.json`** — one chunk per genus (~20.3K files,
+  avg ~20 KB) with that genus's full species (light + heavy merged).
 
-Per-species heavy data (wiki, traits, observations facets, sisters, audio,
-labeledPhotos, subspecies, etc.) lives in `web/<app>/chunks/<chunkId>.json`.
-The chunker walks the tree top-down; the first node whose `speciesCount` is
-≤ 1000 becomes a chunk root and owns all its descendant species.
-
-Result: initial load is small (e.g. birds = 7 MB skeleton vs the old 60 MB).
-Species pages fetch one chunk on demand and cache it.
+The shared shell (`web/_shell/app.js`) understands `lazy`: opening a genus
+fetches its chunk and merges the species into `tree.nodes`; a deep link to a
+species resolves its genus from the `s-Genus-epithet` id. Higher-rank clade
+pages (order/family) carry their Wikipedia summary in the trunk; genus pages are
+link-only (their summary would bloat the up-front load — see Pending).
 
 ### Shared shell
+`web/_shell/{index.html,app.js,style.css}` is the canonical SPA. Each build
+copies it into the app dir. `ROOT_ID` is resolved from the `parent == null`
+node, so one shell serves birds, plantae, and the clade apps. Edit `_shell/`
+then rebuild (or `cp` it into the app dirs) to propagate.
 
-`web/_shell/` holds the canonical `index.html`, `app.js`, `style.css`. Each
-build script (`scripts/07-build-tree.mjs` for birds,
-`scripts/taxon/07-build-tree.mjs` for everything else) copies these into the
-app's directory at the end of a build. Changes only need to be made in
-`_shell/`; every rebuild re-syncs.
+### Server mounts (`scripts/serve.mjs`, localhost:8000)
+`/audio/`→`data/audio/`, `/images/`→`data/images/`, `/sonograms/`→`data/sonograms/`,
+plus root `/countries.geojson` + `/states.geojson` for the heatmap.
 
-`ROOT_ID` is detected from `tree.json` at app init (the node with
-`parent == null`), so the same shell works for any taxon.
+## Data sources & how to obtain them
 
-### Sub-app routing
+`data/` is gitignored, so the dumps below are local. **Big lesson: bulk dumps
+beat per-species API crawls.** Three datasets we pull as bulk files:
 
-- `/` — landing (kingdoms → groups → apps)
-- `/birds/`, `/trees/`, etc. — each app is its own static directory
-- Inside each app: hash routing (`#/<nodeId>`, `#/nearby`, `#/about`)
+| Layer | Source (bulk) | Notes |
+|---|---|---|
+| Discovery years | GBIF backbone `simple.txt.gz` (~488 MB, CC BY) | `scripts/parse-gbif-years.mjs`. Year from authorship (animals) / publication string (plants); prefer the **basionym** year so recombinations report the original. |
+| Author full names | Wikidata P428 (botanical) + P835 (zoological) | `scripts/fetch-author-names.mjs` → `data/author-names.json`. "L." and "Linnaeus" both → "Carl Linnaeus". |
+| Plant photos | iNaturalist Open Data (`taxa`/`observations`/`photos` CSVs, ~30 GB, CC) | `scripts/parse-inat-opendata.mjs` (needs `--max-old-space-size=12288`). Research-grade + observer's primary photo + accepted CC licence. ~16% → ~35% coverage. |
+| Edibility flags | Kew WCUPS PDF (689 pp, CC BY) | `scripts/parse-wcups.py` (pypdf) → `data/edibility/wcups.json`. |
+| Edibility detail | Plants For A Future CSV (donation, CC BY-NC-SA) | `scripts/parse-pfaf.mjs`. Keep the prominent PFAF link in the UI. |
+| Higher-taxon photos + summaries | Wikidata P225 + Wikipedia REST | `scripts/fetch-higher-taxa-images.mjs`. P225 (not title guessing) avoids wrong articles (e.g. "Lesbia" the genus, not the poet); kingdom-namespaced cache for homonyms. |
 
-### Server mounts
+README.md documents the exact download commands for each.
 
-`scripts/serve.mjs` serves `web/` at `localhost:8000` with three extra
-mounts under absolute paths (so all sub-apps share them):
-- `/audio/` → `data/audio/`
-- `/images/` → `data/images/`
-- `/sonograms/` → `data/sonograms/`
+## The plant pipeline (how `/plantae/` is built)
 
-Plus root-level `/countries.geojson` and `/states.geojson` for the heatmap.
-
-### Generic taxon pipeline
-
-Adding a new plant clade is now a config-only change. Edit `scripts/taxa.mjs`
-to add the GBIF backbone key + OToL ott_id + web/data dirs, then:
-
-```bash
-bash scripts/run-taxon-pipeline.sh <taxon_name>
-```
-
-This runs:
-1. `01-species-list.mjs` — GBIF backbone enumeration
-2. `02-fetch-wikidata.mjs` — SPARQL pass for image / IUCN / multilingual names
-3. `03-fetch-wikipedia.mjs` — REST `/page/summary/` endpoint
-4. `04-fetch-gbif.mjs` — country/state/month/year/establishmentMeans facets
-5. (omitted from the pipeline by design) — iNat photos; run separately
-6. `06-otol-sisters.mjs` — Open Tree subtree → per-species sister list
-7. `07-build-tree.mjs` — skeleton + chunks under `web/<app>/`
-
-iNat (step 5) is intentionally not in the pipeline because we hold the rule
-"only one iNat downloader at a time" (see Lessons below).
+1. `scripts/enumerate-plantae.mjs` — per-order GBIF enumeration under kingdom
+   key 6, capturing full lineage → `data/plantae/species.json` (436,707).
+2. Generic fetchers run with `TAXON=plantae` against `data/plantae/`:
+   `02-fetch-wikidata` (P18/IUCN/names), `03-fetch-wikipedia` (summaries),
+   `04-fetch-gbif` (range facets). `scripts/run-plantae-data.sh` orchestrates
+   them in parallel (different hosts).
+3. Bulk layers above (years, edibility, iNat photos, higher-taxa).
+4. `scripts/build-plantae-tree.mjs` → trunk + chunks; prefers locally-downloaded
+   iNat photos (`data/images/inat-<id>.<ext>`) when present, else streams.
+5. `scripts/aggregate-landing.mjs` → `web/landing.json` for the landing cards.
 
 ## Key lessons learned
 
-- **GBIF over-splits species.** "Accepted" lists at GBIF backbone include
-  varieties, old synonyms, and fossil species. ~2× to 3× inflation is typical.
-  We filter at build time: species with no data signal (no Wikipedia, no
-  image, no IUCN, no real vernacular name, no GBIF observations, no iNat
-  photo) get dropped. Cleanest coverage we got: Eucalypts at 89% Wikipedia,
-  Conifers at 61%, Birds at 98.5%.
+- **Bulk dumps > per-species API crawls.** GBIF backbone (years) and iNat Open
+  Data (photos) each replaced a multi-day/multi-week API crawl with a ~hours
+  download + offline join. Always check for a bulk dump first.
+- **`pkill -f <pattern>` self-matches your own shell** when the pattern is in the
+  command line — it killed my launcher mid-script several times (exit 144) and
+  once spawned a *second* downloader that corrupted a 12 GB file via concurrent
+  writes. Use file-based scripts (pattern lives in the file, not the cmdline),
+  or kill by exact PID, and verify downloads with `gunzip -t`.
+- **Big joins OOM at the default heap.** The iNat open-data join needs
+  `node --max-old-space-size=12288`.
+- **Watch dump column offsets.** GBIF backbone `simple.txt.gz` is header-less and
+  I was off by one; the year also lives in the *basionym* columns for
+  recombinations. Always dump a known row and index every field first.
+- **Resolve higher taxa via Wikidata P225, not Wikipedia titles.** Titles return
+  wrong primary topics for ambiguous genus names. For ranks with no P225 match,
+  a title fallback is safe only for unambiguous suffixes (-aceae/-ales/-phyta…).
+- **One iNat downloader at a time** (rate budget). Saved as a feedback memory.
+- **License-filter at build, not fetch** (legacy caches may hold ARR/ND);
+  `OK_LICENSES` = cc0/pd/cc-by/cc-by-sa/cc-by-nc/cc-by-nc-sa.
+- Wikidata SPARQL flakes (502s) → retry + backoff + resume; deep `OFFSET`
+  pagination times out → use keyset pagination on the value.
 
-- **Wikidata is sparse for plants.** Plant taxa rarely have `P574` (year of
-  taxon name publication), `P5208` (life form), or `P2052` (max age). We
-  verified on Pinus sylvestris and Sequoiadendron giganteum — both empty.
-  Don't bother fetching these without NLP from Wikipedia article bodies.
+## What's running right now (at handoff)
 
-- **OToL synthesis prunes contested taxa.** Pinopsida, Quercus, Fagaceae —
-  all return "broken / pruned_ott_id". Fall back to family-level subtrees or
-  accept missing sister species. Documented in code as `otolFamilyMode`.
+- **GBIF range-map crawl** (`TAXON=plantae 04-fetch-gbif`) — the only remaining
+  fetcher, ~weeks (deliberately slow at concurrency 1; faceted occurrence
+  queries are heavy). Resumable. Rebuild `/plantae/` periodically to surface new
+  heatmaps.
+- **Local iNat photo download** (`scripts/download-inat-photos.mjs`) — fetching
+  ~525K medium plant photos to `data/images/inat-<id>.<ext>` (~67 GB) so plants
+  are fully offline like birds. Resumable (skips existing). Once done, rebuild
+  `/plantae/` so it points at the local files (the build already prefers them).
 
-- **iNat photo size variants.** `default_photo.medium_url` is 500px and
-  looks pixelated in a 1024px slot. `large.jpg` (1024px) is what we want.
-  Worse — some `medium_url` fields are null and the fetcher fell back to
-  `url`, which is the square 75px thumbnail. Fix is a single regex that
-  upgrades `/square.` / `/small.` / `/medium.` → `/large.` (see `largeInat`
-  in `scripts/07-build-tree.mjs` and the same regex in download scripts).
+## Pending / nice-to-have
 
-- **xeno-canto hot-link blocking.** Their CDN returns 200 to curl but
-  effectively blocks browser hot-linking via Cloudflare. Download
-  sonograms + audio locally and serve via the mount at `/sonograms/` and
-  `/audio/`.
-
-- **Per-photo CC attribution.** For Wikimedia Commons photos we hit the
-  MediaWiki API once per file to pull `extmetadata.Artist` + license; this
-  gets baked into `tree.json` so the credit line names the human author.
-  iNat returns attribution in the photo object — we trust that string and
-  display it verbatim.
-
-- **License filtering happens at build, not fetch.** Some older fetcher
-  runs stored ARR or ND photos in caches; the build-tree script applies a
-  strict `OK_LICENSES` set so legacy data still gets cleaned up. We dropped
-  328 species from the bird app this way.
-
-- **One iNat downloader at a time.** Two concurrent iNat fetchers tank each
-  other's rate budget; the labeled-photos and conifer-extras run we tried
-  in parallel both slowed dramatically. Hard rule going forward — saved as
-  feedback memory in `~/.claude/projects/...memory/feedback_inat_rate.md`.
-
-- **Wikidata SPARQL flakes.** We see occasional HTTP 502 from
-  `query.wikidata.org`. The Wikidata fetcher now retries 5× with exponential
-  backoff (2s, 4s, 8s, 16s, 32s), saves progress every 600 species, and
-  resumes from cache on re-run.
-
-## What's running right now (when handed off)
-
-- **Plant iNat pipeline** (`scripts/run-inat-pipeline.sh`). Sequential
-  through all 16 plant clades — conifers (resuming from ~850 cached) → oaks
-  → palms → maples → eucalypts → cycads → ginkgo → gnetales → magnolias →
-  birches → willows → figs → laurels → acacias → rosaceae → myrtaceae. Each
-  clade: fetch iNat taxa + photos, then rebuild that app. Total ~10–20 hours
-  of sequential fetching. Respects the one-iNat-at-a-time rule.
-
-  When it finishes, `scripts/aggregate-landing.mjs` is run automatically so
-  the landing page's `landing.json` reflects any updated `reprImg`.
-
-- **Done since last handoff revision:**
-  - Bird secondary photo download (`scripts/33-download-secondary-photos.mjs`)
-    — 18,762 photos downloaded to `data/images/<slug>-<variant>.jpg`. Tree
-    rebuilt; thumb-strip URLs now point at local paths. 29,408 total bird
-    images on disk.
-
-## Pending work
-
-### Immediate
-
-- **Wait for plant iNat pipeline to finish** (see "What's running" above).
-  When done, every plant app's species pages will show iNat-sourced thumb
-  strips and the iNat species page link will resolve to the real taxon
-  page rather than the search fallback.
-
-- **Re-download plant photos at /large.jpg** *only if* plant photos look
-  pixelated after iNat lands. The fetcher stores `medium_url` (500 px); for
-  birds we caught this and re-fetched at `/large.jpg` (1024 px). Same regex
-  fix in `scripts/07-build-tree.mjs` (`largeInat`) covers display, but local
-  files (if we ever download plant photos) would need re-fetch. For now
-  plants stream from iNat — the URL transform handles it.
-
-### Nice-to-have
-
-- **Display bird elevation data.** Already fetched (`data/gbif-elevation.json`,
-  8,058 species). Build-tree doesn't expose it yet — could surface as a
-  "typical elevation: X m" stat in the morphology section.
-
-- **Establishment means rendering** for plants. The GBIF facet is captured
-  but the UI doesn't show native/introduced status per region. Easy
-  addition in `renderObservations`.
-
-- **Search across all sub-apps.** Each app has in-app search but the
-  landing has no cross-app search. Would require a small index served from
-  the landing.
-
-- **Re-fetch iNat extras for plants.** Currently empty — `inat-extras.json`
-  was only populated for birds. Plants would benefit from extra photos.
-
-- **Color extraction** from downloaded photos to power a "yellow bird"
-  filter. Local processing; documented as a future idea but not built.
-
-## Things deliberately not done
-
-- **Full Wikipedia article bodies.** Would double the text payload and
-  requires HTML-to-plain-text parsing. Summary endpoint is enough for now.
-
-- **All ~350K vascular plants.** Multi-day fetch, skeleton would blow past
-  50 MB and require chunking the skeleton itself. The user opted for 16
-  curated tree clades instead.
-
-- **Bird audio re-encoded for smaller files.** Storage is fine on dev
-  machine (~5 GB audio), but if packaging into a mobile bundle becomes a
-  goal, Opus re-encoding could shrink ~5×.
-
-- **eBird Status & Trends maps.** Per-week migration maps would be a huge
-  visual upgrade for birds, but needs eBird API key + several GB of data.
+- **Final `/plantae/` rebuild** once the local photo download + GBIF crawl wrap.
+- **Genus-page Wikipedia summaries** for plants — skipped (would bloat the trunk).
+  Tuck each genus's summary into its on-demand chunk instead.
+- **Merge Birds into the unified tree** so it's one seamless "Living things" tree
+  rather than the landing linking out to `/birds/`.
+- Display bird elevation (`data/gbif-elevation.json`, already fetched); plant
+  establishment-means (native/introduced); cross-app search; colour-extraction
+  "yellow flower" filter.
 
 ## How to rebuild from scratch
 
-`data/` and per-app `web/<app>/` are gitignored. To rebuild:
+`data/` and generated `web/<app>/` are gitignored. `npm install`, then:
+- Birds: `npm run fetch-taxonomy` + scripts 02–32 (see `package.json`),
+  `npm run build-tree`.
+- Plants: `scripts/enumerate-plantae.mjs` → `scripts/run-plantae-data.sh` →
+  the bulk layers (see "Data sources" + README) → `scripts/build-plantae-tree.mjs`.
+- `node scripts/aggregate-landing.mjs`, then `npm run serve` → localhost:8000.
 
-1. Install: `npm install`
-2. Fetch bird data (many hours): `npm run fetch-taxonomy`, then chain through
-   scripts 02–32 (see `package.json` for the named scripts).
-3. Fetch plant data: `bash scripts/run-taxon-pipeline.sh <taxon>` per clade.
-4. Build all: `npm run build-tree` (birds) and
-   `TAXON=<name> node scripts/taxon/07-build-tree.mjs` per plant clade.
-5. Aggregate landing: `node scripts/aggregate-landing.mjs`.
-6. Serve: `npm run serve` → http://localhost:8000
-
-For xeno-canto specifically you'll need an API key. Get one at
-https://xeno-canto.org/account and pass via env:
-`XC_API_KEY=... npm run fetch-xc`.
-
-## Source layout
+## Source layout (selected)
 
 ```
 scripts/
-  taxa.mjs                      # per-taxon config (rootKey, ottId, paths)
-  taxon/                        # generic pipeline (TAXON=<name>)
-    01-species-list.mjs         # GBIF backbone enumeration
-    02-fetch-wikidata.mjs       # SPARQL: image/IUCN/multilingual names
-    03-fetch-wikipedia.mjs      # REST /page/summary/
-    04-fetch-gbif.mjs           # country/state/year/month facets
-    05-fetch-inat.mjs           # taxonId + top CC photos (NOT in pipeline)
-    06-otol-sisters.mjs         # Open Tree subtree → sister species
-    07-build-tree.mjs           # skeleton + chunks → web/<app>/
-  conifers/                     # superseded by scripts/taxon/ (kept for reference)
-  01-32 ...                     # bird-specific pipeline (older, more elaborate)
-  run-taxon-pipeline.sh         # runs 01→07 for one or more taxa, in series
-
+  enumerate-plantae.mjs        # GBIF enumeration of all Plantae (full lineage)
+  build-plantae-tree.mjs       # lazy trunk + genus chunks for /plantae/
+  run-plantae-data.sh          # orchestrate wikidata+wikipedia+gbif for plantae
+  parse-gbif-years.mjs         # discovery years from GBIF backbone dump
+  fetch-author-names.mjs       # Wikidata P428/P835 -> full author names
+  parse-inat-opendata.mjs      # plant photos from iNat Open Data dump
+  download-inat-photos.mjs     # download those photos locally (offline)
+  parse-wcups.py / parse-pfaf.mjs   # edibility (Kew WCUPS / PFAF)
+  fetch-higher-taxa-images.mjs # higher-taxon photos + summaries (Wikidata P225)
+  aggregate-landing.mjs        # web/landing.json
+  taxa.mjs, taxon/01..07, run-taxon-pipeline.sh   # the (now-superseded) clade pipeline
+  07-build-tree.mjs, 01-32 ...                    # bird-specific pipeline
 web/
-  _shell/                       # canonical SPA (HTML + JS + CSS)
-  index.html                    # landing page (hash-routed kingdom tree)
-  landing.json                  # generated by scripts/aggregate-landing.mjs
-  countries.geojson             # Natural Earth 1:110m countries (trimmed)
-  states.geojson                # Natural Earth 1:50m admin1 (trimmed)
-  birds/, trees/, oaks/, ...    # generated app outputs (gitignored)
-
-data/                           # all fetched data (gitignored)
-  audio/, images/, sonograms/   # downloaded media
-  *.json                        # per-source caches
+  _shell/                      # canonical SPA (HTML+JS+CSS); dark mode lives here
+  index.html, landing.json     # landing page + generated manifest
+  birds/, plantae/, oaks/ ...  # generated app outputs (gitignored)
+data/                          # all fetched data + media (gitignored)
+  images/ audio/ sonograms/    # local media (incl. data/images/inat-<id>.<ext>)
+  plantae/                     # species.json + per-source caches for the unified tree
+  inat-opendata/ gbif-backbone/ edibility/   # bulk dumps
 ```
