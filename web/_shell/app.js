@@ -35,37 +35,47 @@ async function fullSpecies(id) {
   return { ...light, ...(chunk?.[id] || {}) };
 }
 
-// --- Lazy tree (e.g. /plantae/) ------------------------------------------
-// The trunk (tree.json) only goes down to genus; each genus's species live in
-// chunks/<genusId>.json, fetched on demand. When a genus is opened we merge its
-// species into tree.nodes so node()/path()/render* all work unchanged.
-async function ensureGenusLoaded(genusId) {
-  const g = tree.nodes[genusId];
-  if (!g || g.type !== "genus" || !g.lazyChildren) return;
-  const chunk = await loadChunk(genusId);
-  g.lazyChildren = false;
-  if (!chunk) { g.children = g.children || []; return; }
-  const ids = [];
-  for (const [sid, sp] of Object.entries(chunk)) { tree.nodes[sid] = sp; ids.push(sid); }
-  ids.sort((a, b) => {
+// --- Lazy tree (/plantae/, /animalia/) -----------------------------------
+// The trunk (tree.json) only goes partway down: to genus for plants, to family
+// for animals (which are too many to ship genera up front). Deeper nodes live
+// in chunks/<id>.json fetched on demand. Opening a lazy container merges its
+// children into tree.nodes so node()/path()/render* all work unchanged.
+//
+// One loader serves every level. A container's chunk is a map of childId→node;
+// children may themselves be lazy (an animal family's genera). For a genus, the
+// chunk also carries the genus's own descriptor under its id, so a cold deep
+// link to a species can load g-Genus directly (the chunk name is derivable from
+// s-Genus-epithet) and get both the species and the genus node — whose parent
+// family already sits in the trunk, keeping the breadcrumb chain whole.
+async function ensureContainerLoaded(id) {
+  let n = tree.nodes[id];
+  if (n && !n.lazyChildren && n._loaded) return;
+  const chunk = await loadChunk((n && n.chunkId) || id);
+  if (!chunk) { if (n) { n.lazyChildren = false; n.children = n.children || []; } return; }
+  const childIds = [];
+  for (const [cid, cnode] of Object.entries(chunk)) {
+    if (cid === id) { tree.nodes[id] = { ...(tree.nodes[id] || {}), ...cnode }; continue; }
+    tree.nodes[cid] = cnode;
+    childIds.push(cid);
+  }
+  childIds.sort((a, b) => {
     const an = tree.nodes[a].commonName || tree.nodes[a].name;
     const bn = tree.nodes[b].commonName || tree.nodes[b].name;
     return an.localeCompare(bn);
   });
-  g.children = ids;
+  n = tree.nodes[id];
+  if (n) { n.children = childIds; n.lazyChildren = false; n._loaded = true; }
 }
 
-// Make a node available for rendering, fetching a genus chunk if needed. Handles
-// both genus pages and deep links straight to a species (id = s-Genus-epithet,
-// whose genus is g-Genus).
+// Make a node available for rendering, fetching whatever chunk(s) are needed.
+// Handles container pages (plant genus, animal family/genus) and deep links to
+// a node not yet in the trunk (a species, or an animal genus living in a chunk).
 async function ensureLoaded(id) {
   if (!tree.lazy) return;
-  if (!tree.nodes[id] && /^s-/.test(id)) {
-    await ensureGenusLoaded("g-" + id.slice(2).split("-")[0]);
-    return;
-  }
   const n = tree.nodes[id];
-  if (n && n.type === "genus" && n.lazyChildren) await ensureGenusLoaded(id);
+  if (!n && /^s-/.test(id)) { await ensureContainerLoaded("g-" + id.slice(2).split("-")[0]); return; }
+  if (!n && /^g-/.test(id)) { await ensureContainerLoaded(id); return; }
+  if (n && (n.type === "genus" || n.type === "family") && n.lazyChildren) await ensureContainerLoaded(id);
 }
 
 const RANK_LABEL = {
@@ -755,7 +765,8 @@ function path(id) {
 // Ancestry above the sub-app root so breadcrumbs link back through the
 // kingdom/group hierarchy on the landing page (uses landing's hash routes).
 const ROOT_ANCESTRY = {
-  aves:         [["Living things", "/"], ["Animalia", "/#/animalia"]],
+  aves:         [["Living things", "/"], ["Animalia", "/animalia/"]],
+  animalia:     [["Living things", "/"]],
   plantae:      [["Living things", "/"]],
   pinopsida:    [["Living things", "/"], ["Plantae", "/#/plantae"], ["Gymnosperms", "/#/plantae/gymnosperms"]],
   cycadopsida:  [["Living things", "/"], ["Plantae", "/#/plantae"], ["Gymnosperms", "/#/plantae/gymnosperms"]],
@@ -1337,7 +1348,7 @@ async function route() {
   if (id === "nearby") { renderNearby(); return; }
   if (tree.lazy) {
     const t = tree.nodes[id];
-    if (!t || (t.type === "genus" && t.lazyChildren)) {
+    if (!t || ((t.type === "genus" || t.type === "family") && t.lazyChildren)) {
       $view.innerHTML = `<div class="loading">Loading…</div>`;
       await ensureLoaded(id);
       if ((location.hash.replace(/^#\//, "") || ROOT_ID).trim() !== id) return;

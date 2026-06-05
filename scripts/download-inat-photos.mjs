@@ -13,7 +13,11 @@ const UA = "oss-birdwatching-app/0.0 (https://github.com/Phylliida/oss-birdwatch
 const CONCURRENCY = 40;
 await mkdir(IMG, { recursive: true });
 
-const inat = JSON.parse(await readFile("data/plantae/inat.json", "utf8"));
+// Which kingdom's photo set to fetch. Defaults to plants; set
+// INAT_JSON=data/animalia/inat.json for animals. All photos land in the same
+// data/images/inat-<id>.<ext> pool (the build's resolveInat finds them by id).
+const INAT_JSON = process.env.INAT_JSON || "data/plantae/inat.json";
+const inat = JSON.parse(await readFile(INAT_JSON, "utf8"));
 const jobs = new Map(); // filename -> url
 for (const v of Object.values(inat)) {
   if (!v || !v.photos) continue;

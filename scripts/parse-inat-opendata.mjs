@@ -24,7 +24,10 @@ import { readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
 const DIR = "data/inat-opendata";
-const OUT = "data/plantae/inat.json";
+// Which kingdom dir to build photos for. Defaults to plants; set
+// TAXON_DIR=data/animalia to build the animal set instead. Same dump, same join.
+const TAXON_DIR = process.env.TAXON_DIR || "data/plantae";
+const OUT = `${TAXON_DIR}/inat.json`;
 const OK = new Set(["cc0", "cc-by", "cc-by-sa", "cc-by-nc", "cc-by-nc-sa"]); // reject ND + ARR
 const LIC = { "cc0": "CC0", "cc-by": "CC BY", "cc-by-sa": "CC BY-SA", "cc-by-nc": "CC BY-NC", "cc-by-nc-sa": "CC BY-NC-SA" };
 const MAX_OBS = 15, MAX_PHOTOS = 5;
@@ -35,9 +38,9 @@ async function* rows(file) {
   for await (const line of rl) { if (header) { header = false; continue; } yield line.split("\t"); }
 }
 
-const species = JSON.parse(await readFile("data/plantae/species.json", "utf8"));
+const species = JSON.parse(await readFile(`${TAXON_DIR}/species.json`, "utf8"));
 const ourNames = new Set(species.map((s) => s.scientificName));
-console.log(`${ourNames.size.toLocaleString()} plant names`);
+console.log(`${ourNames.size.toLocaleString()} names from ${TAXON_DIR}`);
 
 // taxa: name -> taxon_id (prefer active), taxon_id -> name
 const nameToId = new Map(), idToName = new Map();

@@ -24,6 +24,7 @@ const APPS = [
   { id: "myrtaceae",    path: "web/myrtaceae/tree.json",  href: "/myrtaceae/" },
   { id: "eucalyptus",   path: "web/eucalypts/tree.json",  href: "/eucalypts/" },
   { id: "plantae",      path: "web/plantae/tree.json",    href: "/plantae/" },
+  { id: "animalia",     path: "web/animalia/tree.json",   href: "/animalia/" },
 ];
 
 const out = {};
