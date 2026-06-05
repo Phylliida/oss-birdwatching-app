@@ -745,6 +745,9 @@ function creditFor(n) {
     const page = n.imageFilePage || n.image;
     return `Photo: ${artist} · via <a href="${page}" target="_blank" rel="noopener">Wikimedia Commons</a>${lic}`;
   }
+  if (n.imageSource === "gbif") {
+    return `Photo: ${n.imageAttribution || "specimen image"} · via <a href="https://www.gbif.org" target="_blank" rel="noopener">GBIF</a>`;
+  }
   return "";
 }
 

@@ -107,6 +107,34 @@ node scripts/build-plantae-tree.mjs                               # surface the 
 any curated API-sourced photos already in `data/plantae/inat.json` and fill the
 rest from the dump.)
 
+## Microscopic animal photos (GBIF media download)
+
+iNaturalist barely covers the microscopic phyla (rotifers, tardigrades,
+nematodes, flatworms…) — you can't field-photograph a tardigrade. GBIF, though,
+aggregates **museum and specialist collections** (the Bohart Museum, the
+Ramazzotti Tardigrade Collection, Smithsonian NMNH) that publish CC-licensed
+micrographs. We pull those via a bulk GBIF **occurrence download** (Darwin Core
+Archive, includes a `multimedia.txt` with image URLs), parsed offline — no
+per-species API calls.
+
+Needs a **free [GBIF.org](https://www.gbif.org/) account** (the download API is
+authenticated). The download is filtered to the 16 microscopic phyla +
+`StillImage` + CC licences, so it's small.
+
+```bash
+# 1. Submit + wait + fetch the archive (resumable; ~minutes-hours to assemble)
+GBIF_USER=you GBIF_PWD=secret node scripts/gbif-media-download.mjs
+# 2. Parse the DwC-A -> data/animalia/gbif-media.json (needs `unzip`)
+node scripts/parse-gbif-media-dwca.mjs
+# 3. Rebuild — gbif-media is used as a photo source below Commons + iNat
+node --max-old-space-size=24576 scripts/build-animalia-tree.mjs
+```
+
+The download gets a citable DOI (stored in `data/animalia/gbif-media-download.json`);
+GBIF and the underlying datasets are credited per image (CC0 / CC BY / CC BY-NC).
+A no-account fallback exists in `scripts/fetch-gbif-media.mjs` (slower per-species
+API). 
+
 ## Licence
 
 App code: MIT. Bundled/displayed data follows each source's licence with

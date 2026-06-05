@@ -31,6 +31,9 @@ const wikidata = (await loadJson(`${DATA}/wikidata.json`)) || {};
 const wiki = (await loadJson(`${DATA}/wiki.json`)) || {};
 const gbif = (await loadJson(`${DATA}/gbif.json`)) || {};
 const inat = (await loadJson(`${DATA}/inat.json`)) || {};
+// Museum / specialist still images from a GBIF DwC-A media download — gap-fill
+// for the microscopic phyla iNat barely covers. See parse-gbif-media-dwca.mjs.
+const gbifMedia = (await loadJson(`${DATA}/gbif-media.json`)) || {};
 const higher = (await loadJson("data/higher-taxa-wiki.json")) || {};
 const years = (await loadJson("data/described-years.json")) || {};
 console.log(`Loaded ${species.length.toLocaleString()} species; wikidata ${Object.keys(wikidata).length.toLocaleString()}, wiki ${Object.keys(wiki).length.toLocaleString()}, gbif ${Object.keys(gbif).length.toLocaleString()}, inat ${Object.keys(inat).length.toLocaleString()}`);
@@ -112,6 +115,15 @@ for (const sp of species) {
   if (!image && inatPhotos) {
     image = inatPhotos[0].url; imageSource = "inat"; imageAttribution = inatPhotos[0].attribution || null;
     extraPhotos = inatPhotos.length > 1 ? inatPhotos.slice(1) : null;
+  }
+  // Last resort (mostly the microscopic phyla): a CC museum/specialist image
+  // aggregated by GBIF. Only when neither Commons nor iNat has anything.
+  if (!image) {
+    const gm = gbifMedia[sp.scientificName];
+    if (gm && gm.photos && gm.photos.length) {
+      image = gm.photos[0].url; imageSource = "gbif"; imageAttribution = gm.photos[0].attribution || null;
+      extraPhotos = gm.photos.length > 1 ? gm.photos.slice(1) : null;
+    }
   }
   const altNames = (() => {
     const m = wd && wd.names; if (!m) return null;
