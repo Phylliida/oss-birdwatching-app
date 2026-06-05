@@ -49,6 +49,15 @@ if (existsSync("web/plantae/tree.json")) {
     if (["root", "phylum", "class", "order", "family"].includes(n.type) && n.name) plantNames.add(n.name);
   }
 }
+// And the unified animalia tree's higher ranks so the animal clade pages get
+// their own photo + summary. Skip its ~205K genera (fall back to a descendant
+// photo, as with plants).
+if (existsSync("web/animalia/tree.json")) {
+  const at = JSON.parse(await readFile("web/animalia/tree.json", "utf8"));
+  for (const n of Object.values(at.nodes)) {
+    if (["root", "phylum", "class", "order", "family"].includes(n.type) && n.name) animalNames.add(n.name);
+  }
+}
 console.log(`${animalNames.size} animal names, ${plantNames.size} plant names`);
 
 // ---- Wikidata helpers ----------------------------------------------------

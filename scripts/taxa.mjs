@@ -207,6 +207,21 @@ export const TAXA = {
     otolFamilyMode: false,
     extinctFamilies: [],
   },
+
+  // The whole animal kingdom, enumerated with full lineage straight from the
+  // GBIF backbone dump by scripts/enumerate-animalia.mjs (not the generic 01 —
+  // no API crawl needed). The generic 02 Wikidata / 03 Wikipedia fetchers run
+  // against this dataDir keyed by scientificName; built by build-animalia-tree.
+  animalia: {
+    rootName: "Animalia",
+    commonName: "Animals",
+    rootKey: 1,
+    rootId: "animalia",
+    dataDir: "data/animalia",
+    webDir: "web/animalia",
+    otolFamilyMode: false,
+    extinctFamilies: [],
+  },
 };
 
 export function getTaxon(name) {
