@@ -24,7 +24,7 @@ if [ "${COUNT}" -lt 1000000 ]; then
 fi
 
 echo "Launching Wikidata + Wikipedia fetchers (TAXON=animalia)..."
-TAXON=animalia nohup node scripts/taxon/02-fetch-wikidata.mjs  > /tmp/animalia-wikidata.log  2>&1 &
+TAXON=animalia nohup node --max-old-space-size=12288 scripts/taxon/02-fetch-wikidata.mjs > /tmp/animalia-wikidata.log 2>&1 &
 TAXON=animalia nohup node scripts/taxon/03-fetch-wikipedia.mjs > /tmp/animalia-wikipedia.log 2>&1 &
 
 sleep 4

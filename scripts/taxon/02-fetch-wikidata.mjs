@@ -4,6 +4,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { getTaxon } from "../taxa.mjs";
+import { loadWikidata, saveWikidata, shardOf } from "../wikidata-store.mjs";
 
 const taxon = getTaxon(process.env.TAXON);
 const SPECIES_PATH = `${taxon.dataDir}/species.json`;
@@ -53,14 +54,11 @@ async function queryBatch(batch) {
   throw lastErr;
 }
 
-// Resume from previously cached file so a mid-run crash doesn't waste work.
-let data = {};
-if (existsSync(OUT_PATH)) {
-  try { data = JSON.parse(await readFile(OUT_PATH, "utf8")); }
-  catch { /* start fresh */ }
-}
+// Resume from the (sharded) cache so a mid-run crash doesn't waste work.
+let data = await loadWikidata(taxon.dataDir);
+const dirtyShards = new Set();
+const flush = async () => { if (dirtyShards.size) { await saveWikidata(taxon.dataDir, data, dirtyShards); dirtyShards.clear(); } };
 const start = Date.now();
-let dirty = false;
 let failedBatches = 0;
 for (let i = 0; i < species.length; i += BATCH) {
   const batch = species.slice(i, i + BATCH);
@@ -74,7 +72,7 @@ for (let i = 0; i < species.length; i += BATCH) {
     // and keep going.
     failedBatches++;
     console.warn(`Batch ${i} failed (${err.message}); skipping, will retry on a later run. [${failedBatches} skipped]`);
-    if (dirty) { await writeFile(OUT_PATH, JSON.stringify(data)); dirty = false; }
+    await flush();
     await new Promise((r) => setTimeout(r, PER_BATCH_DELAY_MS));
     continue;
   }
@@ -91,24 +89,22 @@ for (let i = 0; i < species.length; i += BATCH) {
   // Mark every queried species with no Wikidata item as null so resume can skip
   // this batch next time instead of re-issuing the (costly) SPARQL query.
   for (const s of batch) if (!(s.scientificName in data)) data[s.scientificName] = null;
-  dirty = true;
+  for (const s of batch) dirtyShards.add(shardOf(s.scientificName));
   const done = Math.min(i + BATCH, species.length);
-  if (done % 600 === 0) {
-    await writeFile(OUT_PATH, JSON.stringify(data));
-    dirty = false;
-  }
+  // Flush less often than per-600 now that a flush rewrites whole shards.
+  if (done % 3000 === 0) await flush();
   const rate = done / ((Date.now() - start) / 1000);
   process.stdout.write(`  ${done}/${species.length} (${rate.toFixed(0)}/s)\n`);
   await new Promise((r) => setTimeout(r, PER_BATCH_DELAY_MS));
 }
 process.stdout.write("\n");
 
-await writeFile(OUT_PATH, JSON.stringify(data));
+await flush();
 const vals = Object.values(data).filter(Boolean);
 const withImg = vals.filter((v) => v.image).length;
 const withIucn = vals.filter((v) => v.iucn).length;
 const withNames = vals.filter((v) => Object.keys(v.names).length > 0).length;
-console.log(`Wrote ${OUT_PATH}${failedBatches ? ` (${failedBatches} batches skipped — re-run to retry them)` : ""}`);
+console.log(`Wrote ${taxon.dataDir}/wikidata-*.json (sharded)${failedBatches ? ` (${failedBatches} batches skipped — re-run to retry them)` : ""}`);
 console.log(`  With image: ${withImg}/${species.length} (${(withImg / species.length * 100).toFixed(1)}%)`);
 console.log(`  With IUCN:  ${withIucn}/${species.length} (${(withIucn / species.length * 100).toFixed(1)}%)`);
 console.log(`  With names: ${withNames}/${species.length} (${(withNames / species.length * 100).toFixed(1)}%)`);

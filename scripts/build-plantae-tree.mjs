@@ -14,6 +14,7 @@
 
 import { readFile, writeFile, mkdir, readdir, unlink, copyFile } from "node:fs/promises";
 import { existsSync, readdirSync } from "node:fs";
+import { loadWikidata } from "./wikidata-store.mjs";
 
 const DATA = "data/plantae";
 const WEB = "web/plantae";
@@ -22,7 +23,7 @@ const ROOT_ID = "plantae";
 const loadJson = async (p) => (existsSync(p) ? JSON.parse(await readFile(p, "utf8")) : null);
 
 const species = JSON.parse(await readFile(`${DATA}/species.json`, "utf8"));
-const wikidata = (await loadJson(`${DATA}/wikidata.json`)) || {};
+const wikidata = await loadWikidata(DATA);
 const wiki = (await loadJson(`${DATA}/wiki.json`)) || {};
 const gbif = (await loadJson(`${DATA}/gbif.json`)) || {};
 const inat = (await loadJson(`${DATA}/inat.json`)) || {};
