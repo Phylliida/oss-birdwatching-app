@@ -58,17 +58,21 @@ const keyToName = new Map();
 for (const s of species) keyToName.set(String(s.gbifKey), s.scientificName);
 console.log(`${keyToName.size.toLocaleString()} species indexed by gbifKey`);
 
-// Pass 1: occurrence.txt -> gbifID -> our species name (via speciesKey)
-const gbifIdToName = new Map();
+// Pass 1: occurrence.txt -> gbifID -> { our species name, occurrence licence }.
+// We keep the occurrence licence because multimedia.txt often leaves the per-row
+// licence blank — but the download predicate guarantees the occurrence is CC, so
+// the image inherits it (GBIF's model: media without an explicit licence take
+// the record's).
+const gbifIdInfo = new Map();
 let occRows = 0;
 await streamMember("occurrence.txt", (c, ix) => {
   occRows++;
   const id = c[ix.gbifID];
   const sk = c[ix.speciesKey];
   const name = sk && keyToName.get(sk);
-  if (id && name) gbifIdToName.set(id, name);
+  if (id && name) gbifIdInfo.set(id, { name, lic: normLicense(c[ix.license]) });
 });
-console.log(`occurrence.txt: ${occRows.toLocaleString()} rows, ${gbifIdToName.size.toLocaleString()} matched to our species`);
+console.log(`occurrence.txt: ${occRows.toLocaleString()} rows, ${gbifIdInfo.size.toLocaleString()} matched to our species`);
 
 // Pass 2: multimedia.txt -> attach images
 const out = {};
@@ -77,12 +81,13 @@ await streamMember("multimedia.txt", (c, ix) => {
   mmRows++;
   if (ix.type != null && c[ix.type] && c[ix.type] !== "StillImage") return;
   const id = c[ix.gbifID];
-  const name = gbifIdToName.get(id);
-  if (!name) return;
+  const info = gbifIdInfo.get(id);
+  if (!info) return;
   const url = c[ix.identifier];
   if (!url) return;
-  const code = normLicense(c[ix.license]);
+  const code = normLicense(c[ix.license]) || info.lic;
   if (!code) return;
+  const name = info.name;
   const rec = out[name] || (out[name] = { photos: [] });
   if (rec.photos.length >= MAX_PHOTOS || rec.photos.some((p) => p.url === url)) return;
   const who = (ix.creator != null && c[ix.creator]) || (ix.rightsHolder != null && c[ix.rightsHolder]) || (ix.publisher != null && c[ix.publisher]) || "an unnamed contributor";
