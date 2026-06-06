@@ -34,10 +34,9 @@ const inat = (await loadJson(`${DATA}/inat.json`)) || {};
 // Museum / specialist still images from a GBIF DwC-A media download — gap-fill
 // for the microscopic phyla iNat barely covers. See parse-gbif-media-dwca.mjs.
 const gbifMedia = (await loadJson(`${DATA}/gbif-media.json`)) || {};
-// Locally-downloaded copies of those (originalUrl -> /images/...); see
-// download-gbif-media.mjs. Prefer the local copy so they're offline too.
+// Locally-downloaded copies of those (originalUrl -> "/images/..." when saved,
+// or null when the source was dead/non-image); see download-gbif-media.mjs.
 const gbifLocal = (await loadJson(`${DATA}/gbif-media-local.json`)) || {};
-const resolveGbif = (url) => gbifLocal[url] || url;
 const higher = (await loadJson("data/higher-taxa-wiki.json")) || {};
 const years = (await loadJson("data/described-years.json")) || {};
 console.log(`Loaded ${species.length.toLocaleString()} species; wikidata ${Object.keys(wikidata).length.toLocaleString()}, wiki ${Object.keys(wiki).length.toLocaleString()}, gbif ${Object.keys(gbif).length.toLocaleString()}, inat ${Object.keys(inat).length.toLocaleString()}`);
@@ -52,6 +51,15 @@ function resolveInat(url) {
   const m = url && url.match(/\/photos\/(\d+)\/\w+\.(\w+)/);
   if (m) { const fn = `inat-${m[1]}.${m[2].toLowerCase()}`; if (localImages.has(fn)) return `/images/${fn}`; }
   return largeInat(url);
+}
+// Wikimedia Commons can rasterise TIFF / SVG / PDF originals to a JPEG thumbnail
+// via ?width= — browsers can't render those formats directly. Other Commons
+// images pass through unchanged (just https).
+function commonsImg(url) {
+  if (!url) return null;
+  url = url.replace(/^http:\/\//, "https://");
+  if (/\.(tiff?|svg|pdf)$/i.test(url.split("?")[0])) url += (url.includes("?") ? "&" : "?") + "width=1024";
+  return url;
 }
 
 const MIN_COUNTRY_OBS = 10;
@@ -112,7 +120,7 @@ for (const sp of species) {
   const inatRec = inat[sp.scientificName];
   const inatPhotos = inatRec && inatRec.photos && inatRec.photos.length
     ? inatRec.photos.map((p) => ({ ...p, url: resolveInat(p.url) })) : null;
-  let image = wd && wd.image ? wd.image.replace(/^http:\/\//, "https://") : null;
+  let image = wd && wd.image ? commonsImg(wd.image) : null;
   let imageSource = image ? "commons" : null;
   let imageAttribution = null;
   let extraPhotos = inatPhotos;
@@ -125,9 +133,16 @@ for (const sp of species) {
   if (!image) {
     const gm = gbifMedia[sp.scientificName];
     if (gm && gm.photos && gm.photos.length) {
-      const ph = gm.photos.map((p) => ({ ...p, url: resolveGbif(p.url) }));
-      image = ph[0].url; imageSource = "gbif"; imageAttribution = ph[0].attribution || null;
-      extraPhotos = ph.length > 1 ? ph.slice(1) : null;
+      // Drop URLs the local-download marked dead (404 / non-image) so the card
+      // shows a clean "no photo" rather than a broken image; map the rest to the
+      // local copy (keep the remote URL only if it wasn't downloaded yet).
+      const ph = gm.photos
+        .filter((p) => gbifLocal[p.url] !== null)
+        .map((p) => ({ ...p, url: gbifLocal[p.url] || p.url }));
+      if (ph.length) {
+        image = ph[0].url; imageSource = "gbif"; imageAttribution = ph[0].attribution || null;
+        extraPhotos = ph.length > 1 ? ph.slice(1) : null;
+      }
     }
   }
   const altNames = (() => {

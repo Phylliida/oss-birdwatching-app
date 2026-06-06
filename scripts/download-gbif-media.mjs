@@ -18,7 +18,9 @@ const MANIFEST = "data/animalia/gbif-media-local.json";
 const IMG = "data/images";
 const UA = "oss-birdwatching-app/0.0 (https://github.com/Phylliida/oss-birdwatching-app; offline non-commercial)";
 const CONCURRENCY = 8;
-const EXT = { "image/jpeg": "jpg", "image/jpg": "jpg", "image/pjpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp", "image/tiff": "tif" };
+// Only browser-renderable formats — TIFF is excluded (browsers can't show it,
+// and museum TIFFs run to tens of MB each); a TIFF-only source is left "dead".
+const EXT = { "image/jpeg": "jpg", "image/jpg": "jpg", "image/pjpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp" };
 
 await mkdir(IMG, { recursive: true });
 const gm = JSON.parse(await readFile(GM, "utf8"));
