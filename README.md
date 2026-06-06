@@ -135,6 +135,32 @@ GBIF and the underlying datasets are credited per image (CC0 / CC BY / CC BY-NC)
 A no-account fallback exists in `scripts/fetch-gbif-media.mjs` (slower per-species
 API). 
 
+## Plant range maps (GBIF occurrence download)
+
+The "Where & When" heatmap needs per-species country/month/year counts. The
+faceted API (`04-fetch-gbif`) gets these one species at a time, but GBIF
+**deliberately rate-limits** faceted occurrence queries (HTTP 429 above
+concurrency 1), so all ~437K plants would take *weeks*. The bulk download is far
+faster — not because it moves less data (it moves much more), but because it's
+one *allowed bandwidth-bound transfer* instead of hundreds of thousands of
+*rate-limited calls*: ~60–120 GB in ~1–2 h, then a streaming aggregate.
+
+Needs a **free GBIF.org account** (same as the media download).
+
+```bash
+# 1. Submit + wait + fetch all Plantae occurrences (~610M) as SIMPLE_CSV
+GBIF_USER=you GBIF_PWD=secret node scripts/gbif-range-download.mjs
+# 2. Aggregate offline -> data/plantae/gbif.json (per-species facets)
+node --max-old-space-size=32768 scripts/parse-gbif-range.mjs   # needs `unzip`
+# 3. Rebuild
+node scripts/build-plantae-tree.mjs
+```
+
+SIMPLE_CSV carries countryCode / stateProvince / month / year /
+establishmentMeans / speciesKey — every facet the range UI uses. The download
+gets a citable DOI (`data/plantae/gbif-range-download.json`). The same approach
+would work for animal ranges (taxonKey 1), though that's billions of records.
+
 ## Licence
 
 App code: MIT. Bundled/displayed data follows each source's licence with
