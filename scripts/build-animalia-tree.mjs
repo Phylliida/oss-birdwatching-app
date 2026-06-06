@@ -34,6 +34,10 @@ const inat = (await loadJson(`${DATA}/inat.json`)) || {};
 // Museum / specialist still images from a GBIF DwC-A media download — gap-fill
 // for the microscopic phyla iNat barely covers. See parse-gbif-media-dwca.mjs.
 const gbifMedia = (await loadJson(`${DATA}/gbif-media.json`)) || {};
+// Locally-downloaded copies of those (originalUrl -> /images/...); see
+// download-gbif-media.mjs. Prefer the local copy so they're offline too.
+const gbifLocal = (await loadJson(`${DATA}/gbif-media-local.json`)) || {};
+const resolveGbif = (url) => gbifLocal[url] || url;
 const higher = (await loadJson("data/higher-taxa-wiki.json")) || {};
 const years = (await loadJson("data/described-years.json")) || {};
 console.log(`Loaded ${species.length.toLocaleString()} species; wikidata ${Object.keys(wikidata).length.toLocaleString()}, wiki ${Object.keys(wiki).length.toLocaleString()}, gbif ${Object.keys(gbif).length.toLocaleString()}, inat ${Object.keys(inat).length.toLocaleString()}`);
@@ -121,8 +125,9 @@ for (const sp of species) {
   if (!image) {
     const gm = gbifMedia[sp.scientificName];
     if (gm && gm.photos && gm.photos.length) {
-      image = gm.photos[0].url; imageSource = "gbif"; imageAttribution = gm.photos[0].attribution || null;
-      extraPhotos = gm.photos.length > 1 ? gm.photos.slice(1) : null;
+      const ph = gm.photos.map((p) => ({ ...p, url: resolveGbif(p.url) }));
+      image = ph[0].url; imageSource = "gbif"; imageAttribution = ph[0].attribution || null;
+      extraPhotos = ph.length > 1 ? ph.slice(1) : null;
     }
   }
   const altNames = (() => {
