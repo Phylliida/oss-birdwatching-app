@@ -760,6 +760,9 @@ function creditFor(n) {
   if (n.imageSource === "gbif") {
     return `Photo: ${n.imageAttribution || "specimen image"} · via <a href="https://www.gbif.org" target="_blank" rel="noopener">GBIF</a>`;
   }
+  if (n.imageSource === "eol") {
+    return `Photo: ${n.imageAttribution || "EOL"} · via <a href="https://eol.org" target="_blank" rel="noopener">Encyclopedia of Life</a>`;
+  }
   return "";
 }
 

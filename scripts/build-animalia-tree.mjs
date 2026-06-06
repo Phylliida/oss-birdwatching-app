@@ -40,6 +40,8 @@ const gbifMedia = (await loadJson(`${DATA}/gbif-media.json`)) || {};
 const gbifLocal = (await loadJson(`${DATA}/gbif-media-local.json`)) || {};
 // EOL TraitBank: every non-empty asserted trait per species — see parse-eol-traits.mjs.
 const eolTraits = (await loadJson("data/eol/traits-by-name.json")) || {};
+// Targeted EOL gap-fill images (e.g. Mollusca) — see fetch-eol-images.mjs.
+const eolMedia = (await loadJson(`${DATA}/eol-media.json`)) || {};
 const higher = (await loadJson("data/higher-taxa-wiki.json")) || {};
 const years = (await loadJson("data/described-years.json")) || {};
 console.log(`Loaded ${species.length.toLocaleString()} species; wikidata ${Object.keys(wikidata).length.toLocaleString()}, wiki ${Object.keys(wiki).length.toLocaleString()}, gbif ${Object.keys(gbif).length.toLocaleString()}, inat ${Object.keys(inat).length.toLocaleString()}`);
@@ -146,6 +148,15 @@ for (const sp of species) {
         image = ph[0].url; imageSource = "gbif"; imageAttribution = ph[0].attribution || null;
         extraPhotos = ph.length > 1 ? ph.slice(1) : null;
       }
+    }
+  }
+  // Last of all: a targeted EOL gap-fill image (e.g. Mollusca from malacology
+  // collections). See fetch-eol-images.mjs.
+  if (!image) {
+    const em = eolMedia[sp.scientificName];
+    if (em && em.photos && em.photos.length) {
+      image = em.photos[0].url; imageSource = "eol"; imageAttribution = em.photos[0].attribution || null;
+      extraPhotos = em.photos.length > 1 ? em.photos.slice(1) : null;
     }
   }
   const altNames = (() => {
