@@ -414,6 +414,18 @@ function escapeHtml(s) {
 }
 const stars = (r) => `<span class="stars" aria-label="${r} of 5">${"★".repeat(r)}${"☆".repeat(5 - r)}</span>`;
 
+// EOL TraitBank traits: every non-empty asserted trait for this species, as a
+// trait → value grid. See scripts/parse-eol-traits.mjs.
+function renderEolTraits(traits) {
+  if (!traits || !traits.length) return "";
+  const rows = traits.map((x) =>
+    `<div class="trait-row"><span class="trait-k">${escapeHtml(x.t)}</span><span class="trait-v">${escapeHtml(x.v)}</span></div>`
+  ).join("");
+  return `<h2>Traits <span class="altname-count">${traits.length}</span></h2>` +
+    `<div class="eol-traits">${rows}</div>` +
+    `<p class="trait-src">via <a href="https://eol.org" target="_blank" rel="noopener">Encyclopedia of Life</a> TraitBank</p>`;
+}
+
 // PFAF long-text fields keep paragraph newlines — render each as its own <p>.
 function paras(text) {
   return String(text).split("\n").filter((p) => p.trim()).map((p) => `<p>${escapeHtml(p)}</p>`).join("");
@@ -987,6 +999,7 @@ function renderSpecies(n) {
         ${renderWiki(n.wiki)}
         ${renderUses(n)}
         ${renderTraits(n.traits, { wingspan: n.wingspan })}
+        ${renderEolTraits(n.eolTraits)}
         ${renderObservations(n.observations)}
         ${renderGrowing(n)}
         ${renderAltNames(n.altNames)}

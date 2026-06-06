@@ -36,6 +36,8 @@ const wcups = (await loadJson("data/edibility/wcups.json")) || {};
 const pfaf = (await loadJson("data/edibility/pfaf.json")) || {};
 // Year of first description — see scripts/parse-gbif-years.mjs (GBIF backbone, CC BY).
 const years = (await loadJson("data/described-years.json")) || {};
+// EOL TraitBank: every non-empty asserted trait per species — see parse-eol-traits.mjs.
+const eolTraits = (await loadJson("data/eol/traits-by-name.json")) || {};
 console.log(`Loaded ${species.length.toLocaleString()} species; wikidata ${Object.keys(wikidata).length.toLocaleString()}, wiki ${Object.keys(wiki).length.toLocaleString()}, gbif ${Object.keys(gbif).length.toLocaleString()}, inat ${Object.keys(inat).length.toLocaleString()}`);
 
 // Upgrade iNat photo URLs to the 1024px "large" variant.
@@ -160,6 +162,7 @@ for (const sp of species) {
     pfaf: pfaf[sp.scientificName] || null,
     describedYear: (years[sp.scientificName] || {}).year || null,
     describedBy: (years[sp.scientificName] || {}).author || null,
+    eolTraits: eolTraits[sp.scientificName] || null,
     gbifKey: sp.gbifKey,
   });
 }
@@ -220,7 +223,7 @@ for (const n of nodes.values()) {
     const heavy = { id: n.id, type: "species", name: n.name, parent: n.parent };
     if (n.commonName) heavy.commonName = n.commonName;
     if (n.image) heavy.image = n.image;
-    for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "uses", "pfaf", "describedYear", "describedBy", "gbifKey", "imageSource", "imageAttribution"]) {
+    for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "uses", "pfaf", "describedYear", "describedBy", "eolTraits", "gbifKey", "imageSource", "imageAttribution"]) {
       const v = n[k];
       if (v == null) continue;
       if (Array.isArray(v) && v.length === 0) continue;

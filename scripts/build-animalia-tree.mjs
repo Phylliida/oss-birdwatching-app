@@ -38,6 +38,8 @@ const gbifMedia = (await loadJson(`${DATA}/gbif-media.json`)) || {};
 // Locally-downloaded copies of those (originalUrl -> "/images/..." when saved,
 // or null when the source was dead/non-image); see download-gbif-media.mjs.
 const gbifLocal = (await loadJson(`${DATA}/gbif-media-local.json`)) || {};
+// EOL TraitBank: every non-empty asserted trait per species — see parse-eol-traits.mjs.
+const eolTraits = (await loadJson("data/eol/traits-by-name.json")) || {};
 const higher = (await loadJson("data/higher-taxa-wiki.json")) || {};
 const years = (await loadJson("data/described-years.json")) || {};
 console.log(`Loaded ${species.length.toLocaleString()} species; wikidata ${Object.keys(wikidata).length.toLocaleString()}, wiki ${Object.keys(wiki).length.toLocaleString()}, gbif ${Object.keys(gbif).length.toLocaleString()}, inat ${Object.keys(inat).length.toLocaleString()}`);
@@ -163,6 +165,7 @@ for (const sp of species) {
     inatId: (inatRec && inatRec.taxonId) || null,
     describedYear: (years[sp.scientificName] || {}).year || null,
     describedBy: (years[sp.scientificName] || {}).author || null,
+    eolTraits: eolTraits[sp.scientificName] || null,
     gbifKey: sp.gbifKey,
   });
 }
@@ -226,7 +229,7 @@ function heavySpecies(n) {
   const heavy = { id: n.id, type: "species", name: n.name, parent: n.parent };
   if (n.commonName) heavy.commonName = n.commonName;
   if (n.image) heavy.image = n.image;
-  for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "describedYear", "describedBy", "gbifKey", "imageSource", "imageAttribution"]) {
+  for (const k of ["countries", "observations", "wiki", "iucn", "altNames", "extraPhotos", "inatId", "describedYear", "describedBy", "eolTraits", "gbifKey", "imageSource", "imageAttribution"]) {
     const v = n[k];
     if (v == null) continue;
     if (Array.isArray(v) && v.length === 0) continue;
