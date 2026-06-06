@@ -55,6 +55,15 @@ function resolveInat(url) {
   }
   return largeInat(url);
 }
+// Wikimedia Commons can rasterise TIFF / SVG / PDF originals to a JPEG thumbnail
+// via ?width= — browsers can't render those formats directly. Other Commons
+// images pass through unchanged (just https).
+function commonsImg(url) {
+  if (!url) return null;
+  url = url.replace(/^http:\/\//, "https://");
+  if (/\.(tiff?|svg|pdf)$/i.test(url.split("?")[0])) url += (url.includes("?") ? "&" : "?") + "width=1024";
+  return url;
+}
 
 const MIN_COUNTRY_OBS = 10;
 function countriesFor(name) {
@@ -117,7 +126,7 @@ for (const sp of species) {
     ? inatRec.photos.map((p) => ({ ...p, url: resolveInat(p.url) })) : null;
   // Primary photo: Wikidata/Commons if we have it, else fall back to the first
   // iNat photo so the card thumbnail isn't blank.
-  let image = wd && wd.image ? wd.image.replace(/^http:\/\//, "https://") : null;
+  let image = wd && wd.image ? commonsImg(wd.image) : null;
   let imageSource = image ? "commons" : null;
   let imageAttribution = null;
   let extraPhotos = inatPhotos;
